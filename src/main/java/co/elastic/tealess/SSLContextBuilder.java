@@ -1,39 +1,25 @@
 package co.elastic.tealess;
 
-import java.security.cert.X509Certificate;
-import java.security.KeyManagementException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.security.UnrecoverableKeyException;
-import java.util.Arrays;
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509TrustManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import javax.net.ssl.*;
+import java.security.*;
+import java.security.cert.X509Certificate;
+import java.util.Arrays;
 
 public class SSLContextBuilder {
-  private KeyStore trustStore;
-  private KeyStore keyStore;
   private final SecureRandom random = new SecureRandom();
   private final String keyManagerAlgorithm = KeyManagerFactory.getDefaultAlgorithm();
   private final String trustManagerAlgorithm = TrustManagerFactory.getDefaultAlgorithm();
   private final Logger logger = LogManager.getLogger();
+  private KeyStore trustStore;
+  private KeyStore keyStore;
   private SSLCertificateVerificationTracker tracker;
-
-  public interface SSLCertificateVerificationTracker {
-    void track(X509Certificate[] chain, String authType, Throwable exception);
-  }
 
   public void setTracker(SSLCertificateVerificationTracker tracker) {
     this.tracker = tracker;
   }
-
 
   public void setKeyStore(KeyStore keyStore) {
     this.keyStore = keyStore;
@@ -61,14 +47,21 @@ public class SSLContextBuilder {
       tmf = TrustManagerFactory.getInstance(trustManagerAlgorithm);
       tmf.init(trustStore);
       tms = Arrays.stream(tmf.getTrustManagers())
-        .map((tm) -> new TrackingTrustManager((X509TrustManager)tm))
-        .map((tm) -> { tm.setTracker(tracker); return tm; })
-        .toArray(TrustManager[]::new);
+              .map((tm) -> new TrackingTrustManager((X509TrustManager) tm))
+              .map((tm) -> {
+                tm.setTracker(tracker);
+                return tm;
+              })
+              .toArray(TrustManager[]::new);
     }
 
     logger.trace("Building SSLContext with trust: key:{}, trust:{}", kms, tms);
 
     ctx.init(kms, tms, random);
     return ctx;
+  }
+
+  public interface SSLCertificateVerificationTracker {
+    void track(X509Certificate[] chain, String authType, Throwable exception);
   }
 } // SSLContextBuilder

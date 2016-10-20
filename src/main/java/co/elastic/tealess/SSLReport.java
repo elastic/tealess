@@ -1,7 +1,7 @@
 package co.elastic.tealess;
 
-import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
 import java.net.InetSocketAddress;
 
 class SSLReport {
@@ -16,50 +16,49 @@ class SSLReport {
     // Nothing
   }
 
-  void setAddress(InetSocketAddress address) {
-    this.address = address;
+  String getHostname() {
+    return hostname;
   }
 
   void setHostname(String hostname) {
     this.hostname = hostname;
   }
 
-  String getHostname() {
-    return hostname;
-  }
-
   InetSocketAddress getAddress() {
     return address;
+  }
+
+  void setAddress(InetSocketAddress address) {
+    this.address = address;
   }
 
   void setFailed(Throwable e) {
     exception = e;
   }
 
-  void setSSLContext(SSLContext ctx) {
-    sslContext = ctx;
-  }
-
   SSLContext getSSLContext() {
     return sslContext;
   }
 
-  void setSSLSession(SSLSession s) {
-    sslSession = s;
+  void setSSLContext(SSLContext ctx) {
+    sslContext = ctx;
   }
 
   SSLSession getSSLSession() {
     return sslSession;
   }
 
-  void setPeerCertificateDetails(PeerCertificateDetails details) {
-    peerCertificateDetails = details;
+  void setSSLSession(SSLSession s) {
+    sslSession = s;
   }
 
   public PeerCertificateDetails getPeerCertificateDetails() {
     return peerCertificateDetails;
   }
 
+  void setPeerCertificateDetails(PeerCertificateDetails details) {
+    peerCertificateDetails = details;
+  }
 
   Throwable getException() {
     return exception;

@@ -1,19 +1,20 @@
 package co.elastic.tealess;
 
-import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
-import java.util.Arrays;
-import java.security.cert.CertificateFactory;
+import org.apache.logging.log4j.Logger;
+
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.io.IOException;
-import java.security.KeyStore;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import java.security.cert.Certificate;
-import java.io.FileNotFoundException;
-import java.nio.file.Paths;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.util.Arrays;
 
 public class KeyStoreBuilder {
   private static final Logger logger = LogManager.getLogger();
@@ -32,7 +33,7 @@ public class KeyStoreBuilder {
       keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
       try {
         keyStore.load(null, "hurray".toCharArray());
-      } catch (NoSuchAlgorithmException|IOException|CertificateException e) {
+      } catch (NoSuchAlgorithmException | IOException | CertificateException e) {
         throw e;
       }
     } catch (KeyStoreException e) {
@@ -58,7 +59,7 @@ public class KeyStoreBuilder {
     int count = 0;
     try {
       for (Certificate cert : cf.generateCertificates(in)) {
-        String alias = ((X509Certificate)cert).getSubjectX500Principal().toString();
+        String alias = ((X509Certificate) cert).getSubjectX500Principal().toString();
         try {
           keyStore.setCertificateEntry(alias, cert);
         } catch (KeyStoreException e) {
@@ -79,9 +80,9 @@ public class KeyStoreBuilder {
 
     // Blank the passphrase for a little bit of extra safety; hoping it won't
     // live long in memory.
-    Arrays.fill(passphrase, (char)0);
+    Arrays.fill(passphrase, (char) 0);
   }
-  
+
   public void useKeyStore(String path, char[] passphrase) throws IOException, CertificateException, NoSuchAlgorithmException {
     FileInputStream fs;
 
@@ -93,7 +94,7 @@ public class KeyStoreBuilder {
 
     try {
       keyStore.load(fs, passphrase);
-    } catch (IOException|CertificateException|NoSuchAlgorithmException e) {
+    } catch (IOException | CertificateException | NoSuchAlgorithmException e) {
       throw e;
     }
 

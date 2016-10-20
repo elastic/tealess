@@ -1,9 +1,9 @@
 package co.elastic.tealess;
 
-import java.security.cert.Certificate;
 import javax.net.ssl.SSLParameters;
 import java.io.IOException;
 import java.security.*;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
@@ -73,38 +73,38 @@ public class SSLReportAnalyzer {
         KeyStoreBuilder ksb = new KeyStoreBuilder();
         ksb.useDefaultTrustStore();
         KeyStore ks = ksb.build();
-        for (Enumeration<String> aliases = ks.aliases(); aliases.hasMoreElements();) {
+        for (Enumeration<String> aliases = ks.aliases(); aliases.hasMoreElements(); ) {
           String alias = aliases.nextElement();
           Certificate trusted = ks.getCertificate(alias);
           try {
             tail.verify(trusted.getPublicKey());
             System.out.printf("I did some extra digging and found the issuer of this last certificate in your system's default keystore.\n");
             System.out.printf("  The system's keystore alias for the issuer is '%s'\n", alias);
-          } catch (CertificateException|NoSuchAlgorithmException|InvalidKeyException|NoSuchProviderException|SignatureException e) {
+          } catch (CertificateException | NoSuchAlgorithmException | InvalidKeyException | NoSuchProviderException | SignatureException e) {
             // Nothing
           }
         }
-      } catch (IOException|CertificateException|NoSuchAlgorithmException|KeyStoreException e) {
+      } catch (IOException | CertificateException | NoSuchAlgorithmException | KeyStoreException e) {
         e.printStackTrace();
       }
     }
 
     for (int i = 1; i < chain.length; i++) {
-      X509Certificate previous = chain[i-1];
+      X509Certificate previous = chain[i - 1];
       X509Certificate cert = chain[i];
 
       // XXX: Does order matter here?
       // Make sure the current cert is the issuer on the previous cert.
       //if (!previous.getIssuerAlternativeNames().equals(cert.getSubjectX500Principal())) {
-        //System.out.println("  Certificate chain is incorrect.")
-        //System.out.printf("  Certficate #%d in the chain has has the following issuer: %s", i-1, previous);
-        //System.out.printf("    But certificate #%d is different: %s", i, cert);
+      //System.out.println("  Certificate chain is incorrect.")
+      //System.out.printf("  Certficate #%d in the chain has has the following issuer: %s", i-1, previous);
+      //System.out.printf("    But certificate #%d is different: %s", i, cert);
       //}
 
       try {
         previous.verify(cert.getPublicKey());
-      } catch (CertificateException|NoSuchAlgorithmException|InvalidKeyException|NoSuchProviderException|SignatureException e) {
-        System.out.printf("Certificate signature verification failed on certificate %d in the chain provided by the server", i-1);
+      } catch (CertificateException | NoSuchAlgorithmException | InvalidKeyException | NoSuchProviderException | SignatureException e) {
+        System.out.printf("Certificate signature verification failed on certificate %d in the chain provided by the server", i - 1);
         System.out.printf("  Certificate subject: %s\n", previous.getSubjectX500Principal());
         System.out.printf("  Certificate issuer: %s\n", previous.getIssuerX500Principal());
         System.out.printf("  Verification error: %s\n", e);

@@ -1,27 +1,27 @@
 package co.elastic.tealess;
 
+import co.elastic.Blame;
 import co.elastic.Resolver;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import java.net.*;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLEngineResult;
+import javax.net.ssl.SSLException;
+import java.io.IOException;
+import java.net.ConnectException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.security.*;
 import java.security.cert.X509Certificate;
 
-import co.elastic.Blame;
-import java.io.IOException;
-import javax.net.ssl.*;
-import java.security.KeyManagementException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
-
-import static javax.net.ssl.SSLEngineResult.HandshakeStatus.*;
+import static javax.net.ssl.SSLEngineResult.HandshakeStatus.FINISHED;
 
 public class SSLChecker {
   /* Diagnose SSL problems
@@ -33,12 +33,10 @@ public class SSLChecker {
    */
 
   private static final long defaultTimeout = 1000;
-
-  private KeyStore trustStore;
-  private KeyStore keyStore;
   private final Resolver resolver = Resolver.SystemResolver;
   private final Logger logger = LogManager.getLogger();
-
+  private KeyStore trustStore;
+  private KeyStore keyStore;
   private SSLContext ctx;
 
   private PeerCertificateDetails peerCertificateDetails;
