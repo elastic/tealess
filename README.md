@@ -1,6 +1,13 @@
 
 ![tealess](tealess.png)
 
+----
+
+NOTE: This project is not yet ready for general use. We're still figuring out
+what we want it to do and what interfaces it should provide for users.
+
+----
+
 Overview: This project is intended to provide tooling that bridges several gaps
 users have with various SSL/TLS.
 
