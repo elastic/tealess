@@ -30,8 +30,11 @@ import java.util.Enumeration;
 
 public class SSLReportAnalyzer {
 
+  /* TODO: Use org.apache.logging.log4j.message.ParameterizedMessage to format the report. */
+
   static void analyze(Class<? extends Throwable> blame, SSLReport report) {
-    if (blame == sun.security.provider.certpath.SunCertPathBuilderException.class
+    // I use Class.getCanonicalName() here to avoid a compiler warning that sun.security internal API.
+    if (blame.getCanonicalName().equals("sun.security.provider.certpath.SunCertPathBuilderException")
             || blame == java.security.cert.CertPathValidatorException.class) {
       analyzeCertificatePathProblem(report);
     } else if (blame == java.io.EOFException.class) {
@@ -111,14 +114,6 @@ public class SSLReportAnalyzer {
     for (int i = 1; i < chain.length; i++) {
       X509Certificate previous = chain[i - 1];
       X509Certificate cert = chain[i];
-
-      // XXX: Does order matter here?
-      // Make sure the current cert is the issuer on the previous cert.
-      //if (!previous.getIssuerAlternativeNames().equals(cert.getSubjectX500Principal())) {
-      //System.out.println("  Certificate chain is incorrect.")
-      //System.out.printf("  Certficate #%d in the chain has has the following issuer: %s", i-1, previous);
-      //System.out.printf("    But certificate #%d is different: %s", i, cert);
-      //}
 
       try {
         previous.verify(cert.getPublicKey());

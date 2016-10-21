@@ -28,7 +28,7 @@
     <Root level="error">
       <AppenderRef ref="Console"/>
     </Root>
-    <Logger name="com.semicomplete" level="error" />
+    <Logger name="co.elastic" level="error" />
   </Loggers>
 </Configuration>
 

@@ -21,13 +21,11 @@ package co.elastic.tealess;
 
 import co.elastic.Blame;
 import co.elastic.Resolver;
+import org.apache.http.conn.ssl.DefaultHostnameVerifier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLEngineResult;
-import javax.net.ssl.SSLException;
+import javax.net.ssl.*;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetAddress;
@@ -114,7 +112,17 @@ public class SSLChecker {
     }
 
     checkHandshake(sslReport, socket);
+    if (sslReport.getException() != null) {
+      return sslReport;
+    }
+
+    checkHostnameVerification(sslReport);
     return sslReport;
+  }
+
+  private void checkHostnameVerification(SSLReport sslReport) {
+    HostnameVerifier hv = new DefaultHostnameVerifier();
+    sslReport.setHostnameVerified(hv.verify(sslReport.getHostname(), sslReport.getSSLSession()));
   }
 
   private void checkConnect(SSLReport sslReport, SocketChannel socket, long timeout) {
@@ -125,7 +133,6 @@ public class SSLChecker {
       SelectionKey sk = socket.register(selector, SelectionKey.OP_CONNECT);
       socket.connect(address);
       selector.select(timeout);
-      //System.out.println("connectable:" + sk.isConnectable());
       if (!sk.isConnectable()) {
         sslReport.setFailed(new SocketTimeoutException());
         return;
@@ -170,10 +177,13 @@ public class SSLChecker {
     localText.flip();
 
     SSLEngineResult result = null;
+    logger.info("Starting SSL handshake [{}] ", address);
     try {
       SSLEngineResult.HandshakeStatus state;
       state = sslEngine.getHandshakeStatus();
       while (state != FINISHED) {
+        // XXX: Use a Selector to wait for data.
+        logger.trace("State: {} [{}]", state, address);
         switch (state) {
           case NEED_TASK:
             sslEngine.getDelegatedTask().run();
@@ -184,11 +194,15 @@ public class SSLChecker {
             result = sslEngine.wrap(localText, localWire);
             state = result.getHandshakeStatus();
             localWire.flip();
-            while (localWire.hasRemaining()) socket.write(localWire);
+            while (localWire.hasRemaining()) {
+              int bytes = socket.write(localWire);
+              logger.trace("Sent {} bytes [{}]", bytes, address);
+            }
             localWire.compact();
             break;
           case NEED_UNWRAP:
-            socket.read(peerWire);
+            int bytes = socket.read(peerWire);
+            logger.trace("Read {} bytes [{}]", bytes, address);
             peerWire.flip();
             result = sslEngine.unwrap(peerWire, peerText);
             state = result.getHandshakeStatus();
@@ -202,6 +216,12 @@ public class SSLChecker {
       sslReport.setSSLSession(sslEngine.getHandshakeSession());
       sslReport.setPeerCertificateDetails(peerCertificateDetails);
       logger.warn("beginHandshake failed", e);
+      return;
     }
+
+    logger.info("handshake completed [{}]", address);
+
+    // Handshake OK!
+    sslReport.setSSLSession(sslEngine.getSession());
   }
 }

@@ -30,6 +30,7 @@ class SSLReport {
   private InetSocketAddress address;
   private PeerCertificateDetails peerCertificateDetails;
   private String hostname;
+  private boolean hostnameVerified;
 
   SSLReport() {
     // Nothing
@@ -83,6 +84,14 @@ class SSLReport {
     return exception;
   }
 
+  void setHostnameVerified(boolean verified) {
+    hostnameVerified = verified;
+  }
+  
+  boolean getHostnameVerified() {
+    return hostnameVerified;
+  }
+  
   boolean success() {
     return exception == null;
   }

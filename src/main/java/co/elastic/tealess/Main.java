@@ -41,6 +41,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class Main {
+  private static final String PACKAGE_LOGGER_NAME = "co.elastic";
   private static final Logger logger = LogManager.getLogger();
   private final String[] args;
 
@@ -103,7 +104,7 @@ public class Main {
         case "--log-level":
           arg = i.next();
           LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
-          ctx.getConfiguration().getLoggerConfig("com.semicomplete").setLevel(Level.valueOf(arg));
+          ctx.getConfiguration().getLoggerConfig(PACKAGE_LOGGER_NAME).setLevel(Level.valueOf(arg));
           ctx.updateLoggers();
           break;
         case "--":
@@ -190,6 +191,7 @@ public class Main {
     for (Map.Entry<Class<? extends Throwable>, List<SSLReport>> entry : failureGroups.entrySet()) {
       Class<? extends Throwable> blame = entry.getKey();
       List<SSLReport> failures = entry.getValue();
+      System.out.println();
       System.out.printf("Failure: %s\n", blame);
       for (SSLReport r : failures) {
         System.out.printf("  %s\n", r.getAddress());
