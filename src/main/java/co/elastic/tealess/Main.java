@@ -36,6 +36,7 @@ import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -60,9 +61,9 @@ public class Main {
       if (e.getCause() != null) {
         message = String.format("Configuration error: %s. Reason: %s", e.getMessage(), e.getCause().getMessage());
         System.out.println(e.getCause().getMessage());
+        e.getCause().printStackTrace(System.out);
       } else {
         message = String.format("Configuration error: %s.", e.getMessage());
-        System.out.println("2");
       }
       System.out.println(message);
       System.exit(1);
@@ -76,29 +77,30 @@ public class Main {
     while (i.hasNext()) {
       String entry = i.next();
       String arg;
+      char[] secret;
       switch (entry) {
         case "--capath":
           arg = i.next();
           try {
             trust.addCAPath(arg);
           } catch (CertificateException | FileNotFoundException | KeyStoreException e) {
-            throw new Bug("Failed adding certificate authorities from file " + arg, e);
+            throw new ConfigurationProblem("Failed adding certificate authorities from file " + arg, e);
           }
           break;
         case "--truststore":
           arg = i.next();
           try {
             trust.useKeyStore(arg);
-          } catch (CertificateException | IOException | NoSuchAlgorithmException e) {
-            throw new Bug("Failed trying to trust keystore " + arg, e);
+          } catch (IOException | KeyStoreException | UnrecoverableKeyException | CertificateException | NoSuchAlgorithmException e) {
+            throw new ConfigurationProblem("Failed trying to use keystore " + arg, e);
           }
           break;
         case "--keystore":
           arg = i.next();
           try {
             keys.useKeyStore(arg);
-          } catch (CertificateException | IOException | NoSuchAlgorithmException e) {
-            throw new Bug("Failed trying to use keystore " + arg, e);
+          } catch (IOException | KeyStoreException | UnrecoverableKeyException | CertificateException | NoSuchAlgorithmException e) {
+            throw new ConfigurationProblem("Failed trying to use keystore " + arg, e);
           }
           break;
         case "--log-level":
@@ -140,9 +142,9 @@ public class Main {
     List<String> remainder = parseFlags(keys, trust, i);
 
     try {
-      cb.setTrustStore(trust.build());
-      cb.setKeyStore(keys.build());
-    } catch (IOException | CertificateException | NoSuchAlgorithmException e) {
+      cb.setTrustStore(trust.buildKeyStore());
+      cb.setKeyManagerFactory(keys.buildKeyManagerFactory());
+    } catch (IOException | CertificateException | NoSuchAlgorithmException | KeyStoreException | UnrecoverableKeyException e) {
       throw new Bug("Failed building keystores", e);
     }
 
@@ -214,5 +216,10 @@ public class Main {
     ConfigurationProblem(String message, Throwable cause) {
       super(message, cause);
     }
+  }
+
+  static char[] promptSecret(String text) {
+    System.out.printf("%s: ", text);
+    return System.console().readPassword();
   }
 }

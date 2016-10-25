@@ -28,7 +28,7 @@ import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Enumeration;
 
-public class SSLReportAnalyzer {
+class SSLReportAnalyzer {
 
   /* TODO: Use org.apache.logging.log4j.message.ParameterizedMessage to format the report. */
 
@@ -94,7 +94,7 @@ public class SSLReportAnalyzer {
       try {
         KeyStoreBuilder ksb = new KeyStoreBuilder();
         ksb.useDefaultTrustStore();
-        KeyStore ks = ksb.build();
+        KeyStore ks = ksb.buildKeyStore();
         for (Enumeration<String> aliases = ks.aliases(); aliases.hasMoreElements(); ) {
           String alias = aliases.nextElement();
           Certificate trusted = ks.getCertificate(alias);
@@ -106,7 +106,7 @@ public class SSLReportAnalyzer {
             // Nothing
           }
         }
-      } catch (IOException | CertificateException | NoSuchAlgorithmException | KeyStoreException e) {
+      } catch (IOException | CertificateException | NoSuchAlgorithmException | KeyStoreException | UnrecoverableKeyException e) {
         e.printStackTrace();
       }
     }

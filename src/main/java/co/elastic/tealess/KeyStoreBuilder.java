@@ -22,6 +22,7 @@ package co.elastic.tealess;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.net.ssl.KeyManagerFactory;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -29,102 +30,89 @@ import java.nio.file.Paths;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 
-public class KeyStoreBuilder {
-  private static final Logger logger = LogManager.getLogger();
+class KeyStoreBuilder {
+  private static final String keyManagerAlgorithm = KeyManagerFactory.getDefaultAlgorithm();
 
   // Based on some quick research, this appears to be the default java trust store location
   private static final String defaultTrustStorePath = Paths.get(System.getProperty("java.home"), "lib", "security", "cacerts").toString();
 
-  // Yeah, 'changeit' appears to be the default passphrase. I suppose it's ok. Or is it?!!!
+  // 'changeit' appears to be the default passphrase. I suppose it's ok. Or is it?!!!
   private static final char[] defaultTrustStorePassphrase = "changeit".toCharArray();
 
-  private KeyStore keyStore;
   private boolean modified;
+  private KeyStore keyStore;
+  private KeyManagerFactory keyManagerFactory;
 
-  public KeyStoreBuilder() throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException {
-    try {
-      keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-      try {
-        keyStore.load(null, "hurray".toCharArray());
-      } catch (NoSuchAlgorithmException | IOException | CertificateException e) {
-        throw e;
-      }
-    } catch (KeyStoreException e) {
-      throw e;
-    }
+  KeyStoreBuilder() throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException {
+    keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+    keyStore.load(null, "hurray".toCharArray());
+    keyManagerFactory = KeyManagerFactory.getInstance(keyManagerAlgorithm);
   }
 
-  public void useDefaultTrustStore() throws IOException, CertificateException, NoSuchAlgorithmException {
+  void useDefaultTrustStore() throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException {
     useKeyStore(defaultTrustStorePath, defaultTrustStorePassphrase);
     modified = true;
   }
 
-  public void addCAPath(String path) throws CertificateException, FileNotFoundException, KeyStoreException {
+  void addCAPath(String path) throws CertificateException, FileNotFoundException, KeyStoreException {
     CertificateFactory cf = CertificateFactory.getInstance("X.509");
 
     FileInputStream in;
-    try {
-      in = new FileInputStream(path);
-    } catch (FileNotFoundException e) {
-      throw e;
-    }
+    in = new FileInputStream(path);
 
     int count = 0;
-    try {
-      for (Certificate cert : cf.generateCertificates(in)) {
-        String alias = ((X509Certificate) cert).getSubjectX500Principal().toString();
-        try {
-          keyStore.setCertificateEntry(alias, cert);
-        } catch (KeyStoreException e) {
-          throw e;
-        }
-        count++;
-      }
-    } catch (CertificateException e) {
-      throw e;
+    for (Certificate cert : cf.generateCertificates(in)) {
+      String alias = ((X509Certificate) cert).getSubjectX500Principal().toString();
+      keyStore.setCertificateEntry(alias, cert);
+      count++;
     }
     modified = true;
   }
 
-  public void useKeyStore(String path) throws IOException, CertificateException, NoSuchAlgorithmException {
-    System.out.printf("Enter passphrase for keyStore %s: ", path);
-    char[] passphrase = System.console().readPassword();
-    useKeyStore(path, passphrase);
-
-    // Blank the passphrase for a little bit of extra safety; hoping it won't
-    // live long in memory.
-    Arrays.fill(passphrase, (char) 0);
+  void useKeyStore(String path) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException {
+    try {
+      useKeyStore(path, defaultTrustStorePassphrase);
+    } catch (IOException e) {
+      if (e.getCause() instanceof UnrecoverableKeyException) {
+        System.out.printf("Enter passphrase for keyStore %s: ", path);
+        char[] passphrase = System.console().readPassword();
+        useKeyStore(path, passphrase);
+        Arrays.fill(passphrase, (char) 0);
+      } else {
+        throw e;
+      }
+      // Blank the passphrase for a little bit of extra safety; hoping it won't
+      // live long in memory.
+    }
   }
 
-  public void useKeyStore(String path, char[] passphrase) throws IOException, CertificateException, NoSuchAlgorithmException {
+  void useKeyStore(String path, char[] passphrase) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException {
     FileInputStream fs;
 
-    try {
-      fs = new FileInputStream(path);
-    } catch (FileNotFoundException e) {
-      throw e;
-    }
-
-    try {
-      keyStore.load(fs, passphrase);
-    } catch (IOException | CertificateException | NoSuchAlgorithmException e) {
-      throw e;
-    }
+    fs = new FileInputStream(path);
+    keyStore.load(fs, passphrase);
+    keyManagerFactory.init(keyStore, passphrase);
 
     //logger.info("Loaded keyStore with {} certificates: {}", keyStoreTrustedCertificates(keyStore).size(), path);
     modified = true;
   }
 
-  public KeyStore build() throws IOException, CertificateException, NoSuchAlgorithmException {
+  KeyStore buildKeyStore() throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException {
     if (!modified) {
       useDefaultTrustStore();
     }
     return keyStore;
+  }
+
+  KeyManagerFactory buildKeyManagerFactory() throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException {
+    buildKeyStore();
+    return keyManagerFactory;
   }
 }

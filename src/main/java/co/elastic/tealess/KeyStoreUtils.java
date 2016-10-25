@@ -28,7 +28,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-public class KeyStoreUtils {
+class KeyStoreUtils {
   public static List<Certificate> getTrustedCertificates(KeyStore keyStore) throws Bug {
     List<Certificate> trusted = new LinkedList<>();
     try {

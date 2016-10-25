@@ -23,7 +23,7 @@ import javax.net.ssl.X509TrustManager;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
-public class TrackingTrustManager implements X509TrustManager {
+class TrackingTrustManager implements X509TrustManager {
   private final X509TrustManager tm;
   private SSLContextBuilder.SSLCertificateVerificationTracker tracker;
 

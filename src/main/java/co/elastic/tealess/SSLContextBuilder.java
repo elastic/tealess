@@ -27,7 +27,7 @@ import java.security.*;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 
-public class SSLContextBuilder {
+class SSLContextBuilder {
   private final SecureRandom random = new SecureRandom();
   private final String keyManagerAlgorithm = KeyManagerFactory.getDefaultAlgorithm();
   private final String trustManagerAlgorithm = TrustManagerFactory.getDefaultAlgorithm();
@@ -35,6 +35,7 @@ public class SSLContextBuilder {
   private KeyStore trustStore;
   private KeyStore keyStore;
   private SSLCertificateVerificationTracker tracker;
+  private KeyManagerFactory keyManagerFactory;
 
   public void setTracker(SSLCertificateVerificationTracker tracker) {
     this.tracker = tracker;
@@ -53,18 +54,17 @@ public class SSLContextBuilder {
     KeyManager[] kms = null;
     TrustManager[] tms = null;
 
-    //logger.info("Trusting {} certificates", keystoreTrustedCertificates(keystore).size());
-    if (keyStore != null) {
-      KeyManagerFactory kmf;
-      kmf = KeyManagerFactory.getInstance(keyManagerAlgorithm);
-      kmf.init(keyStore, null);
-      kms = kmf.getKeyManagers();
+    if (keyManagerFactory != null) {
+      kms = Arrays.stream(keyManagerFactory.getKeyManagers())
+              .map((km) -> new LoggingKeyManager((X509KeyManager) km))
+              .toArray(KeyManager[]::new);
     }
 
     if (trustStore != null) {
       TrustManagerFactory tmf;
       tmf = TrustManagerFactory.getInstance(trustManagerAlgorithm);
       tmf.init(trustStore);
+      // Wrap java's TrustManagers in our own so that we can track verification failures.
       tms = Arrays.stream(tmf.getTrustManagers())
               .map((tm) -> new TrackingTrustManager((X509TrustManager) tm))
               .map((tm) -> {
@@ -78,6 +78,10 @@ public class SSLContextBuilder {
 
     ctx.init(kms, tms, random);
     return ctx;
+  }
+
+  public void setKeyManagerFactory(KeyManagerFactory keyManagerFactory) {
+    this.keyManagerFactory = keyManagerFactory;
   }
 
   public interface SSLCertificateVerificationTracker {

@@ -52,8 +52,6 @@ public class SSLChecker {
   private static final long defaultTimeout = 1000;
   private final Resolver resolver = Resolver.SystemResolver;
   private final Logger logger = LogManager.getLogger();
-  private KeyStore trustStore;
-  private KeyStore keyStore;
   private SSLContext ctx;
 
   private PeerCertificateDetails peerCertificateDetails;
@@ -63,13 +61,10 @@ public class SSLChecker {
     ctx = cb.build();
   }
 
-  public SSLChecker(KeyStore keyStore, KeyStore trustStore) throws KeyManagementException, KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException {
-    this.trustStore = trustStore;
-    this.keyStore = keyStore;
-
+  public SSLChecker(KeyManagerFactory keyManagerFactory, KeyStore trustStore) throws KeyManagementException, KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException {
     SSLContextBuilder ctxbuilder = new SSLContextBuilder();
     ctxbuilder.setTrustStore(trustStore);
-    ctxbuilder.setKeyStore(keyStore);
+    ctxbuilder.setKeyManagerFactory(keyManagerFactory);
     ctxbuilder.setTracker(this::setPeerCertificateDetails);
 
     ctx = ctxbuilder.build();
@@ -89,7 +84,7 @@ public class SSLChecker {
     return check(address, name, defaultTimeout);
   }
 
-  public SSLReport check(InetSocketAddress address, String name, long timeout) {
+  private SSLReport check(InetSocketAddress address, String name, long timeout) {
     SSLReport sslReport = new SSLReport();
     sslReport.setSSLContext(ctx);
     sslReport.setHostname(name);
@@ -176,14 +171,14 @@ public class SSLChecker {
     localText.put("SSL TEST. HELLO.".getBytes());
     localText.flip();
 
-    SSLEngineResult result = null;
+    SSLEngineResult result;
     logger.info("Starting SSL handshake [{}] ", address);
     try {
       SSLEngineResult.HandshakeStatus state;
       state = sslEngine.getHandshakeStatus();
       while (state != FINISHED) {
         // XXX: Use a Selector to wait for data.
-        logger.trace("State: {} [{}]", state, address);
+        //logger.trace("State: {} [{}]", state, address);
         switch (state) {
           case NEED_TASK:
             sslEngine.getDelegatedTask().run();
@@ -195,14 +190,14 @@ public class SSLChecker {
             state = result.getHandshakeStatus();
             localWire.flip();
             while (localWire.hasRemaining()) {
-              int bytes = socket.write(localWire);
-              logger.trace("Sent {} bytes [{}]", bytes, address);
+              socket.write(localWire);
+              //logger.trace("Sent {} bytes [{}]", bytes, address);
             }
             localWire.compact();
             break;
           case NEED_UNWRAP:
-            int bytes = socket.read(peerWire);
-            logger.trace("Read {} bytes [{}]", bytes, address);
+             socket.read(peerWire);
+            //logger.trace("Read {} bytes [{}]", bytes, address);
             peerWire.flip();
             result = sslEngine.unwrap(peerWire, peerText);
             state = result.getHandshakeStatus();
@@ -211,7 +206,6 @@ public class SSLChecker {
         }
       }
     } catch (IOException e) {
-      Throwable cause = Blame.get(e);
       sslReport.setFailed(e);
       sslReport.setSSLSession(sslEngine.getHandshakeSession());
       sslReport.setPeerCertificateDetails(peerCertificateDetails);
