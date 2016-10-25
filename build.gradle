@@ -1,5 +1,4 @@
-/*
- * Licensed to Elasticsearch under one or more contributor
+/* * Licensed to Elasticsearch under one or more contributor
  * license agreements. See the NOTICE file distributed with
  * this work for additional information regarding copyright
  * ownership. Elasticsearch licenses this file to you under
@@ -18,32 +17,29 @@
  */
 
 apply plugin: "java"
-apply plugin: 'distribution'
+apply plugin: "distribution"
+apply plugin: "application"
 apply plugin: "idea"
+
+mainClassName = "co.elastic.tealess.Main"
 
 repositories {
   mavenCentral()
 }
 
-
 dependencies {
-  runtime 'org.apache.logging.log4j:log4j-api:2.6.2'
-  compile 'org.apache.logging.log4j:log4j-api:2.6.2'
-  compile 'org.apache.logging.log4j:log4j-core:2.6.2'
+  compile group: "org.apache.logging.log4j", name: "log4j-api", version: "2.6.2"
+  compile group: "org.apache.logging.log4j", name: "log4j-core", version: "2.6.2"
+
+  // I use this for apache hc's DefaultHostnameVerifier.
+  // Once I read the RFC for hostname verification and implement it here,
+  // we won't need this dependency anymore.
   compile group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.2'
 }
 
 task copyToLib(type: Copy) {
-    into "$buildDir/libs"
-    from configurations.runtime
+  into "$buildDir/libs"
+  from configurations.runtime
 }
-
-task run(type: JavaExec) {
-  classpath = sourceSets.main.runtimeClasspath
-  main = "com.semicomplete.tealess.Main"
-  args = [ "--keystore", "ks", "www.semicomplete.com", "443" ]
-  standardInput = System.in
-}
-
 
 build.dependsOn(copyToLib)
