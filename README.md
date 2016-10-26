@@ -8,6 +8,8 @@ what we want it to do and what interfaces it should provide for users.
 
 ----
 
+# Introduction
+
 Overview: This project is intended to provide tooling that bridges several gaps
 users have with various SSL/TLS.
 
@@ -22,9 +24,32 @@ Delivery:
 1. A command-line tool to help users diagnose and repair SSL/TLS problems.
 2. A Java library that can be used from other applications to provide users with actionable SSL/TLS diagnostics.
 
+# Building
+
+You need Java in order to build this.
+
+In order to build the `tealess` command line tool, run the following:
+
+```
+./gradlew installDist
+```
+
+This will make `tealess` available to you as `./build/install/tealess/bin/tealess`
+
+## Building for distributing
+
+You can build a zip or tar of this project by doing the following:
+
+```
+./gradlew distTar
+
+# or, for a .zip file
+./gradlew distZip
+```
+
+This will put the result in `./build/distributions` as `tealess.zip` or `tealess.tar`
 
 -----
-
 
 Random notes:
 
