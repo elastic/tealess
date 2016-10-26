@@ -19,13 +19,12 @@
 
 package co.elastic.tealess;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import javax.net.ssl.KeyManagerFactory;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -57,15 +56,15 @@ class KeyStoreBuilder {
   }
 
   void useDefaultTrustStore() throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException {
-    useKeyStore(defaultTrustStorePath, defaultTrustStorePassphrase);
+    useKeyStore(new File(defaultTrustStorePath), defaultTrustStorePassphrase);
     modified = true;
   }
 
-  void addCAPath(String path) throws CertificateException, FileNotFoundException, KeyStoreException {
+  void addCAPath(Path path) throws CertificateException, FileNotFoundException, KeyStoreException {
     CertificateFactory cf = CertificateFactory.getInstance("X.509");
 
     FileInputStream in;
-    in = new FileInputStream(path);
+    in = new FileInputStream(path.toFile());
 
     int count = 0;
     for (Certificate cert : cf.generateCertificates(in)) {
@@ -76,7 +75,7 @@ class KeyStoreBuilder {
     modified = true;
   }
 
-  void useKeyStore(String path) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException {
+  void useKeyStore(File path) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException {
     try {
       useKeyStore(path, defaultTrustStorePassphrase);
     } catch (IOException e) {
@@ -93,7 +92,7 @@ class KeyStoreBuilder {
     }
   }
 
-  void useKeyStore(String path, char[] passphrase) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException {
+  void useKeyStore(File path, char[] passphrase) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException {
     FileInputStream fs;
 
     fs = new FileInputStream(path);

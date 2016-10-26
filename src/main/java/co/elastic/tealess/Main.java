@@ -22,6 +22,9 @@ package co.elastic.tealess;
 import co.elastic.Blame;
 import co.elastic.Bug;
 import co.elastic.Resolver;
+import co.elastic.tealess.cli.Setting;
+import co.elastic.tealess.cli.input.InvalidValue;
+import co.elastic.tealess.cli.input.PathInput;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -29,14 +32,15 @@ import org.apache.logging.log4j.core.LoggerContext;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.nio.file.Path;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
-import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -50,6 +54,13 @@ public class Main {
     this.args = args;
   }
 
+  private Setting<Path> capath = new Setting<Path>("capath", "The path to a file containing one or more certificates to trust in PEM format.", PathInput.singleton);
+  private Setting<Path> trustStore = new Setting<Path>("truststore", "The path to a java keystore or pkcs12 file containing certificate authorities to trust", PathInput.singleton);
+  private Setting<Path> keyStore = new Setting<Path>("keystore", "The path to a java keystore or pkcs12 file containing private key(s) and client certificates to use when connecting to a remote server.", PathInput.singleton);
+  private Setting<Level> logLevel = new Setting<Level>("log-level", "The log level")
+          .setDefaultValue(Level.INFO)
+          .parseWith(value -> Level.valueOf(value));
+
   public static void main(String[] args) throws Exception {
     try {
       (new Main(args)).run();
@@ -59,7 +70,7 @@ public class Main {
     } catch (ConfigurationProblem e) {
       String message;
       if (e.getCause() != null) {
-        message = String.format("Configuration error: %s. Reason: %s", e.getMessage(), e.getCause().getMessage());
+        message = String.format("Configuration error: %s. Reason: %s", e.getMessage(), e.getCause());
         System.out.println(e.getCause().getMessage());
         e.getCause().printStackTrace(System.out);
       } else {
@@ -70,66 +81,66 @@ public class Main {
     }
   }
 
-  private static List<String> parseFlags(KeyStoreBuilder keys, KeyStoreBuilder trust, Iterator<String> i) throws ConfigurationProblem, Bug {
-    List<String> parameters = new LinkedList<>();
+  private List<Setting<?>> settings() throws ConfigurationProblem {
+    List<Setting<?>> settings = new LinkedList<>();
 
-    flagIteration:
-    while (i.hasNext()) {
-      String entry = i.next();
-      String arg;
-      char[] secret;
-      switch (entry) {
-        case "--capath":
-          arg = i.next();
+    try {
+      Field[] fields = this.getClass().getDeclaredFields();
+      for (Field field : fields) {
+        if (Setting.class.isAssignableFrom(field.getType())) {
+          settings.add((Setting<?>) field.get(this));
+        }
+      }
+    } catch (IllegalAccessException e) {
+      throw new ConfigurationProblem("Failed to parse flags because the security manager prevented us from using reflection to look for fields of type Setting");
+    }
+
+    return settings;
+  }
+
+  private List<String> parseFlags(Iterator<String> args) throws ConfigurationProblem {
+    List<String> parameters = new LinkedList<>();
+    while (args.hasNext()) {
+      String entry = args.next();
+      if (entry.equals("--")) {
+        break;
+      }
+
+      if (!entry.startsWith("-")) {
+        parameters.add(entry); // first non-flag argument
+        break;
+      }
+
+      boolean flagFound = false;
+      for (Setting<?> setting : settings()) {
+        if (setting.isFlag(entry)) {
+          flagFound = true;
+          String text = args.next();
           try {
-            trust.addCAPath(arg);
-          } catch (CertificateException | FileNotFoundException | KeyStoreException e) {
-            throw new ConfigurationProblem("Failed adding certificate authorities from file " + arg, e);
+            Object value = setting.parse(text);
+            logger.debug("Flag --{}={] parsed: {}", entry, text, value);
+          } catch (InvalidValue e) {
+            throw new ConfigurationProblem(String.format("Invalid value for flag %s: %s", setting.getName(), text), e);
           }
           break;
-        case "--truststore":
-          arg = i.next();
-          try {
-            trust.useKeyStore(arg);
-          } catch (IOException | KeyStoreException | UnrecoverableKeyException | CertificateException | NoSuchAlgorithmException e) {
-            throw new ConfigurationProblem("Failed trying to use keystore " + arg, e);
-          }
-          break;
-        case "--keystore":
-          arg = i.next();
-          try {
-            keys.useKeyStore(arg);
-          } catch (IOException | KeyStoreException | UnrecoverableKeyException | CertificateException | NoSuchAlgorithmException e) {
-            throw new ConfigurationProblem("Failed trying to use keystore " + arg, e);
-          }
-          break;
-        case "--log-level":
-          arg = i.next();
-          LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
-          ctx.getConfiguration().getLoggerConfig(PACKAGE_LOGGER_NAME).setLevel(Level.valueOf(arg));
-          ctx.updateLoggers();
-          break;
-        case "--":
-          break flagIteration;
-        default:
-          if (entry.startsWith("-")) {
-            throw new ConfigurationProblem("Invalid flag: " + entry);
-          }
-          parameters.add(entry); // not a flag, the first non-flag parameter
-          break flagIteration;
+        }
+      }
+
+      if (!flagFound) {
+        throw new ConfigurationProblem(String.format("Unknown flag: %s", entry));
       }
     }
 
-    while (i.hasNext()) {
-      parameters.add(i.next());
-    }
 
+    while (args.hasNext()) {
+      parameters.add(args.next());
+    }
     return parameters;
   }
 
   private void run() throws ConfigurationProblem, Bug {
     SSLContextBuilder cb = new SSLContextBuilder();
-    Iterator<String> i = Arrays.asList(args).iterator();
+    Iterator<String> argsi = Arrays.asList(args).iterator();
 
     KeyStoreBuilder keys, trust;
     try {
@@ -139,7 +150,7 @@ public class Main {
       throw new Bug("Failed to new KeyStoreBuilder failed", e);
     }
 
-    List<String> remainder = parseFlags(keys, trust, i);
+    List<String> remainder = parseFlags(argsi);
 
     try {
       cb.setTrustStore(trust.buildKeyStore());
@@ -160,6 +171,37 @@ public class Main {
     } else {
       port = 443;
     }
+
+    if (capath.getValue() != null) {
+      try {
+        trust.addCAPath(capath.getValue());
+      } catch (CertificateException | FileNotFoundException | KeyStoreException e) {
+        throw new ConfigurationProblem("Failed adding certificate authorities from file " + capath.getValue(), e);
+      }
+    }
+
+    if (trustStore.getValue() != null) {
+      try {
+        trust.useKeyStore(trustStore.getValue().toFile());
+      } catch (IOException | KeyStoreException | UnrecoverableKeyException | CertificateException | NoSuchAlgorithmException e) {
+        throw new ConfigurationProblem("Failed trying to use keystore " + trustStore.getValue(), e);
+      }
+    }
+
+    if (keyStore.getValue() != null) {
+      try {
+        keys.useKeyStore(keyStore.getValue().toFile());
+      } catch (IOException | KeyStoreException | UnrecoverableKeyException | CertificateException | NoSuchAlgorithmException e) {
+        throw new ConfigurationProblem("Failed trying to use keystore " + keyStore, e);
+      }
+    }
+
+    if (logLevel.getValue() != null) {
+      LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+      ctx.getConfiguration().getLoggerConfig(PACKAGE_LOGGER_NAME).setLevel(logLevel.getValue());
+      ctx.updateLoggers();
+    }
+
 
     SSLChecker checker;
     try {
