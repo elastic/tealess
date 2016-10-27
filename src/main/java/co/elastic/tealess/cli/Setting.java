@@ -22,6 +22,10 @@ package co.elastic.tealess.cli;
 import co.elastic.tealess.cli.input.InvalidValue;
 
 public class Setting<T> {
+  public String getDescription() {
+    return description;
+  }
+
   public interface Validator<T> {
     public boolean isValid(T value);
   }
@@ -42,7 +46,6 @@ public class Setting<T> {
 
   private Parser<T> parser;
   private Validator<T> validator;
-
 
   public Setting(String name, String description) {
     this.name = name;

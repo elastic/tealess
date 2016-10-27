@@ -55,13 +55,12 @@ public class Main {
   }
 
   private Setting<Path> capath = new Setting<Path>("capath", "The path to a file containing one or more certificates to trust in PEM format.", PathInput.singleton);
-  private Setting<Path> trustStore = new Setting<Path>("truststore", "The path to a java keystore or pkcs12 file containing certificate authorities to trust", PathInput.singleton);
+  private Setting<Path> trustStore = new Setting<Path>("truststore", "The path to a java keystore or pkcs12 file containing certificate authorities to trust", PathInput.singleton)
+          .setDefaultValue(KeyStoreBuilder.defaultTrustStorePath);
   private Setting<Path> keyStore = new Setting<Path>("keystore", "The path to a java keystore or pkcs12 file containing private key(s) and client certificates to use when connecting to a remote server.", PathInput.singleton);
   private Setting<Level> logLevel = new Setting<Level>("log-level", "The log level")
           .setDefaultValue(Level.INFO)
           .parseWith(value -> Level.valueOf(value));
-
-
 
   public static void main(String[] args) throws Exception {
     try {
@@ -113,6 +112,11 @@ public class Main {
         break;
       }
 
+      if (entry.equals("--help")) {
+        parameters.add("--help");
+        return parameters;
+      }
+
       boolean flagFound = false;
       for (Setting<?> setting : settings()) {
         if (setting.isFlag(entry)) {
@@ -153,6 +157,23 @@ public class Main {
     }
 
     List<String> remainder = parseFlags(argsi);
+
+    if (remainder.size() == 1 && remainder.get(0).equals("--help")) {
+      System.out.println("Tealess is a tool for figuring out why an SSL/TLS handshake fails");
+      System.out.println();
+      System.out.println("Usage: tealess [flags] address [port=443]");
+      System.out.println("Flags: ");
+
+      for (Setting<?> setting : settings()) {
+        String lead = String.format("%s VALUE", setting.getFlag());
+        System.out.printf("  %-20s %s", lead, setting.getDescription());
+        if (setting.getDefaultValue() != null) {
+          System.out.printf(" (default='%s')", setting.getDefaultValue());
+        }
+        System.out.println();
+      }
+      return;
+    }
 
     try {
       cb.setTrustStore(trust.buildKeyStore());

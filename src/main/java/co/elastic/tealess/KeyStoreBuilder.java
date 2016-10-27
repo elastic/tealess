@@ -44,7 +44,7 @@ class KeyStoreBuilder {
   private static final String keyManagerAlgorithm = KeyManagerFactory.getDefaultAlgorithm();
 
   // Based on some quick research, this appears to be the default java trust store location
-  private static final String defaultTrustStorePath = Paths.get(System.getProperty("java.home"), "lib", "security", "cacerts").toString();
+  public static final Path defaultTrustStorePath = Paths.get(System.getProperty("java.home"), "lib", "security", "cacerts");
 
   // 'changeit' appears to be the default passphrase. I suppose it's ok. Or is it?!!!
   private static final char[] defaultTrustStorePassphrase = "changeit".toCharArray();
@@ -64,7 +64,7 @@ class KeyStoreBuilder {
   }
 
   void useDefaultTrustStore() throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException {
-    useKeyStore(new File(defaultTrustStorePath), defaultTrustStorePassphrase);
+    useKeyStore(defaultTrustStorePath.toFile(), defaultTrustStorePassphrase);
     modified = true;
   }
 
@@ -73,12 +73,10 @@ class KeyStoreBuilder {
       throw new NullPointerException("path must not be null");
     }
 
-    CertificateFactory cf = CertificateFactory.getInstance("X.509");
-
     if (Files.isDirectory(path)) {
       logger.info("Adding all files in {} to trusted certificate authorities.", path);
       for (File file : path.toFile().listFiles()) {
-        if (file.isFile())
+        if (file.isFile()) {
           addCAPath(file);
         } else {
           logger.info("Ignoring non-file '{}'", file);
@@ -91,7 +89,9 @@ class KeyStoreBuilder {
 
   void addCAPath(File file) throws CertificateException, FileNotFoundException, KeyStoreException {
     FileInputStream in;
-    in = new FileInputStream(file.toFile());
+    in = new FileInputStream(file);
+
+    CertificateFactory cf = CertificateFactory.getInstance("X.509");
 
     int count = 0;
     for (Certificate cert : cf.generateCertificates(in)) {
