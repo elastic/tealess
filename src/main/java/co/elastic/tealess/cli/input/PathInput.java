@@ -19,7 +19,6 @@
 
 package co.elastic.tealess.cli.input;
 
-import co.elastic.tealess.cli.Setting;
 import co.elastic.tealess.cli.Setting.InputHandler;
 
 import java.nio.file.Files;
