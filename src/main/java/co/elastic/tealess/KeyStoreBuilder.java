@@ -19,11 +19,15 @@
 
 package co.elastic.tealess;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import javax.net.ssl.KeyManagerFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.KeyStore;
@@ -48,9 +52,13 @@ class KeyStoreBuilder {
   private boolean modified;
   private KeyStore keyStore;
   private KeyManagerFactory keyManagerFactory;
+  private static final Logger logger = LogManager.getLogger();
 
   KeyStoreBuilder() throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException {
     keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+    // default to an empty KeyStore instance.
+    // the "hurray" passphrase is only to satisfy the KeyStore.load API
+    // (requires a passphrase, even when loading null).
     keyStore.load(null, "hurray".toCharArray());
     keyManagerFactory = KeyManagerFactory.getInstance(keyManagerAlgorithm);
   }
@@ -61,13 +69,33 @@ class KeyStoreBuilder {
   }
 
   void addCAPath(Path path) throws CertificateException, FileNotFoundException, KeyStoreException {
+    if (path == null) {
+      throw new NullPointerException("path must not be null");
+    }
+
     CertificateFactory cf = CertificateFactory.getInstance("X.509");
 
+    if (Files.isDirectory(path)) {
+      logger.info("Adding all files in {} to trusted certificate authorities.", path);
+      for (File file : path.toFile().listFiles()) {
+        if (file.isFile())
+          addCAPath(file);
+        } else {
+          logger.info("Ignoring non-file '{}'", file);
+        }
+      }
+    } else{
+      addCAPath(path.toFile());
+    }
+  }
+
+  void addCAPath(File file) throws CertificateException, FileNotFoundException, KeyStoreException {
     FileInputStream in;
-    in = new FileInputStream(path.toFile());
+    in = new FileInputStream(file.toFile());
 
     int count = 0;
     for (Certificate cert : cf.generateCertificates(in)) {
+      logger.debug("Loaded certificate from {}: {}", file, ((X509Certificate)cert).getSubjectX500Principal());
       String alias = ((X509Certificate) cert).getSubjectX500Principal().toString();
       keyStore.setCertificateEntry(alias, cert);
       count++;
@@ -83,12 +111,13 @@ class KeyStoreBuilder {
         System.out.printf("Enter passphrase for keyStore %s: ", path);
         char[] passphrase = System.console().readPassword();
         useKeyStore(path, passphrase);
+
+        // Make an effort to not keep the passphrase in-memory longer than necessary? Maybe?
+        // This may not matter, anyway, since I'm pretty sure KeyManagerFactor.init() keeps it anyway...
         Arrays.fill(passphrase, (char) 0);
       } else {
         throw e;
       }
-      // Blank the passphrase for a little bit of extra safety; hoping it won't
-      // live long in memory.
     }
   }
 

@@ -61,6 +61,8 @@ public class Main {
           .setDefaultValue(Level.INFO)
           .parseWith(value -> Level.valueOf(value));
 
+
+
   public static void main(String[] args) throws Exception {
     try {
       (new Main(args)).run();
@@ -176,7 +178,7 @@ public class Main {
       try {
         trust.addCAPath(capath.getValue());
       } catch (CertificateException | FileNotFoundException | KeyStoreException e) {
-        throw new ConfigurationProblem("Failed adding certificate authorities from file " + capath.getValue(), e);
+        throw new ConfigurationProblem("Failed adding certificate authorities from path " + capath.getValue(), e);
       }
     }
 
