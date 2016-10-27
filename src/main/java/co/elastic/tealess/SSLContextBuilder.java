@@ -74,7 +74,7 @@ class SSLContextBuilder {
               .toArray(TrustManager[]::new);
     }
 
-    logger.trace("Building SSLContext with trust: key:{}, trust:{}", kms, tms);
+    logger.trace("Building SSLContext with keys:{}, trusts:{}", kms, tms);
 
     ctx.init(kms, tms, random);
     return ctx;
