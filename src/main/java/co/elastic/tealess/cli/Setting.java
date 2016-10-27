@@ -87,7 +87,6 @@ public class Setting<T> {
 
   public T parse(String text) throws InvalidValue {
     T value = this.parser.parse(text);
-    System.out.printf("Parsed %s => %s\n", text, value);
 
     if (this.validator != null) {
       if (!this.validator.isValid(value)) {

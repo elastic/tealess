@@ -29,6 +29,7 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.ConfigurationException;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -48,23 +49,35 @@ import java.util.stream.Collectors;
 public class Main {
   private static final String PACKAGE_LOGGER_NAME = "co.elastic";
   private static final Logger logger = LogManager.getLogger();
-  private final String[] args;
+  private final KeyStoreBuilder keys;
+  private final KeyStoreBuilder trust;
 
-  private Main(String[] args) {
-    this.args = args;
-  }
-
-  private Setting<Path> capath = new Setting<Path>("capath", "The path to a file containing one or more certificates to trust in PEM format.", PathInput.singleton);
-  private Setting<Path> trustStore = new Setting<Path>("truststore", "The path to a java keystore or pkcs12 file containing certificate authorities to trust", PathInput.singleton)
+  private final Setting<Path> capath = new Setting<Path>("capath", "The path to a file containing one or more certificates to trust in PEM format.", PathInput.singleton);
+  private final Setting<Path> trustStore = new Setting<Path>("truststore", "The path to a java keystore or pkcs12 file containing certificate authorities to trust", PathInput.singleton)
           .setDefaultValue(KeyStoreBuilder.defaultTrustStorePath);
-  private Setting<Path> keyStore = new Setting<Path>("keystore", "The path to a java keystore or pkcs12 file containing private key(s) and client certificates to use when connecting to a remote server.", PathInput.singleton);
-  private Setting<Level> logLevel = new Setting<Level>("log-level", "The log level")
+  private final Setting<Path> keyStore = new Setting<Path>("keystore", "The path to a java keystore or pkcs12 file containing private key(s) and client certificates to use when connecting to a remote server.", PathInput.singleton);
+  private final Setting<Level> logLevel = new Setting<Level>("log-level", "The log level")
           .setDefaultValue(Level.INFO)
           .parseWith(value -> Level.valueOf(value));
 
+  private String hostname;
+  private int port;
+
+
+  private Main() throws Bug, ConfigurationProblem {
+    try {
+      keys = new KeyStoreBuilder();
+      trust = new KeyStoreBuilder();
+    } catch (IOException | CertificateException | KeyStoreException | NoSuchAlgorithmException e) {
+      throw new Bug("'new KeyStoreBuilder' failed", e);
+    }
+  }
+
   public static void main(String[] args) throws Exception {
     try {
-      (new Main(args)).run();
+      Main main = new Main();
+      main.parse(args);
+      main.run();
     } catch (Bug e) {
       System.out.printf("Bug: %s\n", e.getMessage());
       e.printStackTrace(System.out);
@@ -144,51 +157,21 @@ public class Main {
     return parameters;
   }
 
-  private void run() throws ConfigurationProblem, Bug {
-    SSLContextBuilder cb = new SSLContextBuilder();
+  private void parse(String[] args) throws ConfigurationProblem {
     Iterator<String> argsi = Arrays.asList(args).iterator();
-
-    KeyStoreBuilder keys, trust;
-    try {
-      keys = new KeyStoreBuilder();
-      trust = new KeyStoreBuilder();
-    } catch (IOException | CertificateException | KeyStoreException | NoSuchAlgorithmException e) {
-      throw new Bug("Failed to new KeyStoreBuilder failed", e);
-    }
 
     List<String> remainder = parseFlags(argsi);
 
     if (remainder.size() == 1 && remainder.get(0).equals("--help")) {
-      System.out.println("Tealess is a tool for figuring out why an SSL/TLS handshake fails");
-      System.out.println();
-      System.out.println("Usage: tealess [flags] address [port=443]");
-      System.out.println("Flags: ");
-
-      for (Setting<?> setting : settings()) {
-        String lead = String.format("%s VALUE", setting.getFlag());
-        System.out.printf("  %-20s %s", lead, setting.getDescription());
-        if (setting.getDefaultValue() != null) {
-          System.out.printf(" (default='%s')", setting.getDefaultValue());
-        }
-        System.out.println();
-      }
+      showHelp();
       return;
-    }
-
-    try {
-      cb.setTrustStore(trust.buildKeyStore());
-      cb.setKeyManagerFactory(keys.buildKeyManagerFactory());
-    } catch (IOException | CertificateException | NoSuchAlgorithmException | KeyStoreException | UnrecoverableKeyException e) {
-      throw new Bug("Failed building keystores", e);
     }
 
     if (remainder.size() == 0) {
       throw new ConfigurationProblem("Usage: tealess [flags] <address> [port]");
     }
 
-    String hostname = remainder.get(0);
-    final int port;
-
+    hostname = remainder.get(0);
     if (remainder.size() == 2) {
       port = Integer.parseInt(remainder.get(1));
     } else {
@@ -224,7 +207,16 @@ public class Main {
       ctx.getConfiguration().getLoggerConfig(PACKAGE_LOGGER_NAME).setLevel(logLevel.getValue());
       ctx.updateLoggers();
     }
+  }
 
+  private void run() throws ConfigurationProblem, Bug {
+    SSLContextBuilder cb = new SSLContextBuilder();
+    try {
+      cb.setTrustStore(trust.buildKeyStore());
+      cb.setKeyManagerFactory(keys.buildKeyManagerFactory());
+    } catch (IOException | CertificateException | NoSuchAlgorithmException | KeyStoreException | UnrecoverableKeyException e) {
+      throw new Bug("Failed building keystores", e);
+    }
 
     SSLChecker checker;
     try {
@@ -268,23 +260,24 @@ public class Main {
     }
   }
 
-  private static class SubjectAlternative {
-    static final int DNS = 2;
-    static final int IPAddress = 7;
-  }
-
-  private static class ConfigurationProblem extends Exception {
-    ConfigurationProblem(String message) {
-      super(message);
-    }
-
-    ConfigurationProblem(String message, Throwable cause) {
-      super(message, cause);
-    }
-  }
-
   static char[] promptSecret(String text) {
     System.out.printf("%s: ", text);
     return System.console().readPassword();
+  }
+
+  void showHelp() throws ConfigurationProblem {
+    System.out.println("Tealess is a tool for figuring out why an SSL/TLS handshake fails");
+    System.out.println();
+    System.out.println("Usage: tealess [flags] address [port=443]");
+    System.out.println("Flags: ");
+
+    for (Setting<?> setting : settings()) {
+      String lead = String.format("%s VALUE", setting.getFlag());
+      System.out.printf("  %-20s %s", lead, setting.getDescription());
+      if (setting.getDefaultValue() != null) {
+        System.out.printf(" (default='%s')", setting.getDefaultValue());
+      }
+      System.out.println();
+    }
   }
 }
