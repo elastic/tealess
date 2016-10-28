@@ -40,7 +40,7 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 
-class KeyStoreBuilder {
+public class KeyStoreBuilder {
   private static final String keyManagerAlgorithm = KeyManagerFactory.getDefaultAlgorithm();
 
   // Based on some quick research, this appears to be the default java trust store location
@@ -54,7 +54,7 @@ class KeyStoreBuilder {
   private KeyManagerFactory keyManagerFactory;
   private static final Logger logger = LogManager.getLogger();
 
-  KeyStoreBuilder() throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException {
+  public KeyStoreBuilder() throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException {
     keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
     // default to an empty KeyStore instance.
     // the "hurray" passphrase is only to satisfy the KeyStore.load API
@@ -68,7 +68,7 @@ class KeyStoreBuilder {
     modified = true;
   }
 
-  void addCAPath(Path path) throws CertificateException, FileNotFoundException, KeyStoreException {
+  public void addCAPath(Path path) throws CertificateException, FileNotFoundException, KeyStoreException {
     if (path == null) {
       throw new NullPointerException("path must not be null");
     }
@@ -103,7 +103,7 @@ class KeyStoreBuilder {
     modified = true;
   }
 
-  void useKeyStore(File path) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException {
+  public void useKeyStore(File path) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException {
     try {
       useKeyStore(path, defaultTrustStorePassphrase);
     } catch (IOException e) {
@@ -132,14 +132,14 @@ class KeyStoreBuilder {
     modified = true;
   }
 
-  KeyStore buildKeyStore() throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException {
+  public KeyStore buildKeyStore() throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException {
     if (!modified) {
       useDefaultTrustStore();
     }
     return keyStore;
   }
 
-  KeyManagerFactory buildKeyManagerFactory() throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException {
+  public KeyManagerFactory buildKeyManagerFactory() throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException {
     buildKeyStore();
     return keyManagerFactory;
   }

@@ -27,7 +27,7 @@ import java.security.*;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 
-class SSLContextBuilder {
+public class SSLContextBuilder {
   private final SecureRandom random = new SecureRandom();
   private final String keyManagerAlgorithm = KeyManagerFactory.getDefaultAlgorithm();
   private final String trustManagerAlgorithm = TrustManagerFactory.getDefaultAlgorithm();

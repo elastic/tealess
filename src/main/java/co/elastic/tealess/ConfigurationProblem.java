@@ -20,11 +20,11 @@
 package co.elastic.tealess;
 
 public class ConfigurationProblem extends Exception {
-  ConfigurationProblem(String message) {
+  public ConfigurationProblem(String message) {
     super(message);
   }
 
-  ConfigurationProblem(String message, Throwable cause) {
+  public ConfigurationProblem(String message, Throwable cause) {
     super(message, cause);
   }
 }

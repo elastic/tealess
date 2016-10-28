@@ -28,11 +28,11 @@ import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Enumeration;
 
-class SSLReportAnalyzer {
+public class SSLReportAnalyzer {
 
   /* TODO: Use org.apache.logging.log4j.message.ParameterizedMessage to format the report. */
 
-  static void analyze(Class<? extends Throwable> blame, SSLReport report) {
+  public static void analyze(Class<? extends Throwable> blame, SSLReport report) {
     // I use Class.getCanonicalName() here to avoid a compiler warning that sun.security internal API.
     if (blame.getCanonicalName().equals("sun.security.provider.certpath.SunCertPathBuilderException")
             || blame == java.security.cert.CertPathValidatorException.class) {

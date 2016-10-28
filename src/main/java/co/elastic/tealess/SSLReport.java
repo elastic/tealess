@@ -23,7 +23,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
 import java.net.InetSocketAddress;
 
-class SSLReport {
+public class SSLReport {
   private Throwable exception;
   private SSLContext sslContext;
   private SSLSession sslSession;
@@ -44,7 +44,7 @@ class SSLReport {
     this.hostname = hostname;
   }
 
-  InetSocketAddress getAddress() {
+  public InetSocketAddress getAddress() {
     return address;
   }
 
@@ -80,7 +80,7 @@ class SSLReport {
     peerCertificateDetails = details;
   }
 
-  Throwable getException() {
+  public Throwable getException() {
     return exception;
   }
 
@@ -92,7 +92,7 @@ class SSLReport {
     return hostnameVerified;
   }
   
-  boolean success() {
+  public boolean success() {
     return exception == null;
   }
 }
