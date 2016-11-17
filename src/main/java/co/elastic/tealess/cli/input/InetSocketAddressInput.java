@@ -44,7 +44,7 @@ public class InetSocketAddressInput implements InputHandler<InetSocketAddress> {
 
     int port = defaultPort;
     if (colon < text.length()) {
-      port = Integer.parseInt(text.substring(colon + 1, text.length() - 1));
+      port = Integer.parseInt(text.substring(colon + 1, text.length()));
     }
     return new InetSocketAddress(host, port);
   }
