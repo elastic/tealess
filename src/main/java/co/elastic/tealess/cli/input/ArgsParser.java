@@ -6,7 +6,7 @@
  * the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ default port is 443.");
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
@@ -28,82 +28,121 @@ import java.lang.reflect.Field;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
-/**
- * Created by jls on 10/27/16.
- */
 public class ArgsParser {
+
   private static final Logger logger = LogManager.getLogger();
 
-  public static List<String> parseFlags(List<Setting<?>> settings, Iterator<String> args) throws ConfigurationProblem {
-    List<String> parameters = new LinkedList<>();
+  public static ParserResult parseFlags(List<Setting<?>> settings, List<Setting<?>> arguments, Iterator<String> args) {
+    String firstArgument;
+    int argi = 0;
+    ParserResult result;
+
     while (args.hasNext()) {
       String entry = args.next();
       if (entry.equals("--")) {
         break;
       }
 
-      if (!entry.startsWith("-")) {
-        parameters.add(entry); // first non-flag argument
+      if (entry.equals("--help")) {
+        return ParserResult.help();
+      }
+
+      if (entry.startsWith("-")) {
+        result = parseFlag(entry, args, settings, arguments);
+        if (!result.getSuccess()) {
+          return result;
+        }
+      } else {
+        // First non-flag argument.
+        result = parseArgument(arguments, argi, entry);
+        argi++;
+        if (!result.getSuccess()) {
+          return result;
+        }
         break;
       }
+    }
 
-      if (entry.equals("--help")) {
-        parameters.add("--help");
-        return parameters;
-      }
-
-      boolean flagFound = false;
-      for (Setting<?> setting : settings) {
-        if (setting.isFlag(entry)) {
-          flagFound = true;
-          String text = args.next();
-          try {
-            Object value = setting.parse(text);
-            logger.debug("Flag --{}={] parsed: {}", entry, text, value);
-          } catch (InvalidValue e) {
-            throw new ConfigurationProblem(String.format("Invalid value for flag %s: %s", setting.getName(), text), e);
-          }
-          break;
-        }
-      }
-
-      if (!flagFound) {
-        throw new ConfigurationProblem(String.format("Unknown flag: %s", entry));
+    for (;args.hasNext(); argi++) {
+      String text = args.next();
+      result = parseArgument(arguments, argi, text);
+      if (!result.getSuccess()) {
+        return result;
       }
     }
 
-    while (args.hasNext()) {
-      parameters.add(args.next());
+    if (argi < arguments.size()) {
+      return ParserResult.error("Missing required argument " + arguments.get(argi).getName());
     }
-    return parameters;
+
+    return ParserResult.success();
   }
 
-  public static List<Setting<?>> getSettings(Object o) throws ConfigurationProblem {
-    List<Setting<?>> settings = new LinkedList<>();
+  private static ParserResult parseArgument(List<Setting<?>> arguments, int argi, String text) {
+    if (argi >= arguments.size()) {
+      return ParserResult.error(String.format("Too many arguments given. Extra argument: '%s' is not allowed.", text));
+    }
+    System.out.println("Parsing arg " + text);
 
+    Setting<?> setting = arguments.get(argi);
     try {
-      Field[] fields = o.getClass().getDeclaredFields();
-      for (Field field : fields) {
-        if (Setting.class.isAssignableFrom(field.getType())) {
-          settings.add((Setting<?>) field.get(o));
-        }
-      }
-    } catch (IllegalAccessException e) {
-      throw new ConfigurationProblem("Failed to parse flags because the security manager prevented us from using reflection to look for fields of type Setting");
+      Object value = setting.parse(text);
+      logger.debug("Argument '{}' with text '{}' parsed: {}", setting.getName(), text, value);
+      return ParserResult.success();
+    } catch (InvalidValue e) {
+      return ParserResult.error(String.format("Invalid value for argument %s: %s\n  -> %s", setting.getName(), text, e));
     }
 
-    return settings;
   }
 
-  public static void showHelp(Object o) throws ConfigurationProblem {
+  private static ParserResult parseFlag(String entry, Iterator<String> args, List<Setting<?>> settings, List<Setting<?>> arguments) {
+    boolean flagFound = false;
+    for (Setting<?> setting : settings) {
+      if (arguments.contains(setting)) {
+        // Don't process an argument setting as a flag.
+        continue;
+      }
+      if (setting.isFlag(entry)) {
+        flagFound = true;
+        String text = args.next();
+        try {
+          Object value = setting.parse(text);
+          logger.debug("Flag --{}={] parsed: {}", entry, text, value);
+        } catch (InvalidValue e) {
+          return ParserResult.error(String.format("Invalid value for flag %s: %s.\n  -> %s", setting.getName(), text, e));
+        }
+        break;
+      }
+    }
+
+    if (!flagFound) {
+      return ParserResult.error(String.format("Unknown flag: %s", entry));
+    }
+
+    return ParserResult.success();
+  }
+
+  public static void showHelp(List<Setting<?>> settings, List<Setting<?>> arguments) {
     System.out.println("Tealess is a tool for figuring out why an SSL/TLS handshake fails");
     System.out.println();
-    System.out.println("Usage: tealess [flags] address [port=443]");
-    System.out.println("Flags: ");
+    String args = arguments.stream().map(a -> a.getName()).collect(Collectors.joining(" "));
+    System.out.println("Usage: program [flags] arguments ...");
 
-    for (Setting<?> setting : getSettings(o)) {
+    System.out.println("Flags: ");
+    for (Setting<?> setting : settings) {
       String lead = String.format("%s VALUE", setting.getFlag());
+      System.out.printf("  %-20s %s", lead, setting.getDescription());
+      if (setting.getDefaultValue() != null) {
+        System.out.printf(" (default='%s')", setting.getDefaultValue());
+      }
+      System.out.println();
+    }
+
+    System.out.println("Arguments: ");
+    for (Setting<?> setting : arguments) {
+      String lead = String.format("%s VALUE", setting.getName());
       System.out.printf("  %-20s %s", lead, setting.getDescription());
       if (setting.getDefaultValue() != null) {
         System.out.printf(" (default='%s')", setting.getDefaultValue());

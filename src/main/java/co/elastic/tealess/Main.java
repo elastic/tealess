@@ -25,6 +25,7 @@ import co.elastic.Resolver;
 import co.elastic.tealess.cli.ConnectCommand;
 import co.elastic.tealess.cli.Setting;
 import co.elastic.tealess.cli.input.InvalidValue;
+import co.elastic.tealess.cli.input.ParserResult;
 import co.elastic.tealess.cli.input.PathInput;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -57,7 +58,18 @@ public class Main {
   public static void main(String[] args) throws Exception {
     try {
       ConnectCommand command = new ConnectCommand();
-      command.parse(args);
+      ParserResult result = command.parse(args);
+
+      if (!result.getSuccess()) {
+        if (result.getDetails() != null) {
+          System.out.println("Problem: " + result.getDetails());
+          if (result.getException() != null) {
+            result.getException().printStackTrace(System.out);
+          }
+          System.exit(1);
+        }
+        return;
+      }
       command.run();
       //} catch (Bug e) {
       //System.out.printf("Bug: %s\n", e.getMessage());

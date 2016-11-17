@@ -24,6 +24,8 @@ import co.elastic.Bug;
 import co.elastic.Resolver;
 import co.elastic.tealess.*;
 import co.elastic.tealess.cli.input.ArgsParser;
+import co.elastic.tealess.cli.input.InetSocketAddressInput;
+import co.elastic.tealess.cli.input.ParserResult;
 import co.elastic.tealess.cli.input.PathInput;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -32,7 +34,6 @@ import org.apache.logging.log4j.core.LoggerContext;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -61,9 +62,11 @@ public class ConnectCommand {
   private final Setting<Level> logLevel = new Setting<Level>("log-level", "The log level")
           .setDefaultValue(Level.INFO)
           .parseWith(value -> Level.valueOf(value));
+  private final Setting<InetSocketAddress> address = new Setting<>("address", "The address in form of `host` or `host:port` to connect", new InetSocketAddressInput(443));
 
-  private String hostname;
-  private int port;
+  // CLI arguments (not flag settings)
+  private final List<Setting<?>> arguments = Arrays.asList(new Setting<?>[]{address});
+  private final List<Setting<?>> flags = Arrays.asList(new Setting<?>[]{capath, trustStore, keyStore, logLevel});
 
   public ConnectCommand() throws Bug, ConfigurationProblem {
     try {
@@ -75,32 +78,26 @@ public class ConnectCommand {
   }
 
 
-  public void parse(String[] args) throws ConfigurationProblem {
+  public ParserResult parse(String[] args) throws ConfigurationProblem {
     Iterator<String> argsi = Arrays.asList(args).iterator();
 
-    List<String> remainder = ArgsParser.parseFlags(getSettings(), argsi);
-
-    if (remainder.size() == 1 && remainder.get(0).equals("--help")) {
-      ArgsParser.showHelp(this);
-      return;
+    ParserResult result = ArgsParser.parseFlags(flags, arguments, argsi);
+    if (!result.getSuccess()) {
+      if (result.getDetails() != null) {
+        System.out.println(result.getDetails());
+        System.out.println();
+      }
+      ArgsParser.showHelp(flags, arguments);
+      return result;
     }
 
-    if (remainder.size() == 0) {
-      throw new ConfigurationProblem("Usage: tealess [flags] <address> [port]");
-    }
-
-    hostname = remainder.get(0);
-    if (remainder.size() == 2) {
-      port = Integer.parseInt(remainder.get(1));
-    } else {
-      port = 443;
-    }
 
     if (capath.getValue() != null) {
       try {
+        logger.info("Adding to trust: capath {}", capath.getValue());
         trust.addCAPath(capath.getValue());
       } catch (CertificateException | FileNotFoundException | KeyStoreException e) {
-        throw new ConfigurationProblem("Failed adding certificate authorities from path " + capath.getValue(), e);
+        return ParserResult.error("Failed adding certificate authorities from path " + capath.getValue(), e);
       }
     }
 
@@ -108,7 +105,7 @@ public class ConnectCommand {
       try {
         trust.useKeyStore(trustStore.getValue().toFile());
       } catch (IOException | KeyStoreException | UnrecoverableKeyException | CertificateException | NoSuchAlgorithmException e) {
-        throw new ConfigurationProblem("Failed trying to use keystore " + trustStore.getValue(), e);
+        return ParserResult.error("Failed trying to use keystore " + trustStore.getValue(), e);
       }
     }
 
@@ -116,7 +113,7 @@ public class ConnectCommand {
       try {
         keys.useKeyStore(keyStore.getValue().toFile());
       } catch (IOException | KeyStoreException | UnrecoverableKeyException | CertificateException | NoSuchAlgorithmException e) {
-        throw new ConfigurationProblem("Failed trying to use keystore " + keyStore, e);
+        return ParserResult.error("Failed trying to use keystore " + keyStore, e);
       }
     }
 
@@ -125,6 +122,7 @@ public class ConnectCommand {
       ctx.getConfiguration().getLoggerConfig(PACKAGE_LOGGER_NAME).setLevel(logLevel.getValue());
       ctx.updateLoggers();
     }
+    return result;
   }
 
   public void run() throws ConfigurationProblem, Bug {
@@ -145,6 +143,8 @@ public class ConnectCommand {
 
     Collection<InetAddress> addresses;
 
+    String hostname = address.getValue().getHostString();
+
     try {
       logger.trace("Doing name resolution on {}", hostname);
       addresses = Resolver.SystemResolver.resolve(hostname);
@@ -154,7 +154,7 @@ public class ConnectCommand {
 
     System.out.printf("%s resolved to %d addresses\n", hostname, addresses.size());
     List<SSLReport> reports = addresses.stream()
-            .map(address -> checker.check(new InetSocketAddress(address, port), hostname))
+            .map(a -> checker.check(new InetSocketAddress(a, address.getValue().getPort()), hostname))
             .collect(Collectors.toList());
 
     List<SSLReport> successful = reports.stream().filter(SSLReport::success).collect(Collectors.toList());
@@ -182,22 +182,5 @@ public class ConnectCommand {
   static char[] promptSecret(String text) {
     System.out.printf("%s: ", text);
     return System.console().readPassword();
-  }
-
-  private List<Setting<?>> getSettings() throws ConfigurationProblem {
-    List<Setting<?>> settings = new LinkedList<>();
-
-    try {
-      Field[] fields = this.getClass().getDeclaredFields();
-      for (Field field : fields) {
-        if (Setting.class.isAssignableFrom(field.getType())) {
-          settings.add((Setting<?>) field.get(this));
-        }
-      }
-    } catch (IllegalAccessException e) {
-      throw new ConfigurationProblem("Failed to parse flags because the security manager prevented us from using reflection to look for fields of type Setting");
-    }
-
-    return settings;
   }
 }

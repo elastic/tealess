@@ -21,7 +21,11 @@ package co.elastic.tealess.cli;
 
 import co.elastic.tealess.cli.input.InvalidValue;
 
+import java.net.InetSocketAddress;
+
 public class Setting<T> {
+  private int argument = -1; // Nothing is an argument by default.
+
   public String getDescription() {
     return description;
   }
@@ -105,5 +109,15 @@ public class Setting<T> {
   public T getValue() {
     return value;
   }
+
+  public Setting<T> asArgument(int i) {
+    this.argument = i;
+    return this;
+  }
+
+  public boolean isArgument() {
+    return this.argument >= 0;
+  }
+
 }
 
