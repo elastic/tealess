@@ -39,9 +39,15 @@ public class SSLReportAnalyzer {
       analyzeCertificatePathProblem(report);
     } else if (blame == java.io.EOFException.class) {
       analyzeEarlyEOF(report);
+    } else if (blame == java.net.SocketTimeoutException.class) {
+      analyzeTimeout(report);
     } else if (blame == javax.net.ssl.SSLHandshakeException.class) {
       analyzeHandshakeProblem(report);
     }
+  }
+
+  private static void analyzeTimeout(SSLReport report) {
+    System.out.printf("  Connection attempt timed-out after %d milliseconds\n", report.getTimeout());
   }
 
   private static void analyzeHandshakeProblem(SSLReport report) {

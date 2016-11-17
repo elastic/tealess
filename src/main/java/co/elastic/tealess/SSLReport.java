@@ -31,6 +31,7 @@ public class SSLReport {
   private PeerCertificateDetails peerCertificateDetails;
   private String hostname;
   private boolean hostnameVerified;
+  private long timeout;
 
   SSLReport() {
     // Nothing
@@ -94,5 +95,13 @@ public class SSLReport {
   
   public boolean success() {
     return exception == null;
+  }
+
+  public void setTimeout(long timeout) {
+    this.timeout = timeout;
+  }
+
+  public long getTimeout() {
+    return timeout;
   }
 }

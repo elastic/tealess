@@ -89,6 +89,7 @@ public class SSLChecker {
     sslReport.setSSLContext(ctx);
     sslReport.setHostname(name);
     sslReport.setAddress(address);
+    sslReport.setTimeout(timeout);
 
     logger.debug("Trying {} (expected hostname {})", address, name);
     SocketChannel socket;
