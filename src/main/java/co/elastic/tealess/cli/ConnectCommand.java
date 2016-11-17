@@ -156,10 +156,12 @@ public class ConnectCommand {
             .map(a -> checker.check(new InetSocketAddress(a, address.getValue().getPort()), hostname))
             .collect(Collectors.toList());
 
+    System.out.println();
+
     List<SSLReport> successful = reports.stream().filter(SSLReport::success).collect(Collectors.toList());
 
     if (successful.size() > 0) {
-      successful.forEach(r -> System.out.printf("SUCCESS %s\n", r.getAddress()));
+      successful.forEach(r -> System.out.printf("Success: %s\n", r.getAddress()));
     } else {
       System.out.println("All SSL/TLS connections failed.");
     }
