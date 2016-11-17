@@ -53,21 +53,14 @@ public class SSLChecker {
   private final Resolver resolver = Resolver.SystemResolver;
   private final Logger logger = LogManager.getLogger();
   private SSLContext ctx;
+  private SSLContextBuilder ctxbuilder;
 
   private PeerCertificateDetails peerCertificateDetails;
 
   public SSLChecker(SSLContextBuilder cb) throws KeyManagementException, KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException {
     cb.setTracker(this::setPeerCertificateDetails);
+    ctxbuilder = cb;
     ctx = cb.build();
-  }
-
-  public SSLChecker(KeyManagerFactory keyManagerFactory, KeyStore trustStore) throws KeyManagementException, KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException {
-    SSLContextBuilder ctxbuilder = new SSLContextBuilder();
-    ctxbuilder.setTrustStore(trustStore);
-    ctxbuilder.setKeyManagerFactory(keyManagerFactory);
-    ctxbuilder.setTracker(this::setPeerCertificateDetails);
-
-    ctx = ctxbuilder.build();
   }
 
   private void setPeerCertificateDetails(X509Certificate[] chain, String authType, Throwable exception) {
@@ -86,6 +79,7 @@ public class SSLChecker {
 
   private SSLReport check(InetSocketAddress address, String name, long timeout) {
     SSLReport sslReport = new SSLReport();
+    sslReport.setSSLContextBuilder(ctxbuilder);
     sslReport.setSSLContext(ctx);
     sslReport.setHostname(name);
     sslReport.setAddress(address);

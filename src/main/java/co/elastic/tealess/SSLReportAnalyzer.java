@@ -43,6 +43,8 @@ public class SSLReportAnalyzer {
       analyzeTimeout(report);
     } else if (blame == javax.net.ssl.SSLHandshakeException.class) {
       analyzeHandshakeProblem(report);
+    } else {
+      System.out.println("  Analysis: " + report.getException().getMessage());
     }
   }
 
@@ -89,10 +91,23 @@ public class SSLReportAnalyzer {
     // If not, offer something actionable, like showing the first missing issuer.
     X509Certificate tail = chain[chain.length - 1];
     if (!tail.getIssuerX500Principal().equals(tail.getSubjectX500Principal())) {
+      System.out.println();
       System.out.println("The last certificate in the chain provided by the server is missing a trust anchor.");
       System.out.println("A trust anchor is what you would normally provide in a certificate authorities file " +
               "that tells the program about SSL certificate authorities that are to be trusted when doing SSL/TLS handshakes.");
-      System.out.println("The certificates I trust do not include the certificate that issued this:");
+      System.out.println();
+
+      int trustCount = 0;
+      try {
+        trustCount = report.getSSLContextBuilder().getTrustStore().size();
+      } catch (KeyStoreException e) {
+        System.out.println("An error occurred while trying to read the trust store: " + e);
+        e.printStackTrace();
+      }
+      System.out.printf("Number of certificates in the trust store: %d\n", trustCount);
+
+      System.out.println();
+      System.out.println("This is the certificate, provided by the remote server, that is missing a trust anchor:");
       System.out.printf("  %s\n", tail.getSubjectX500Principal());
       System.out.printf("  issued by %s\n", tail.getIssuerX500Principal());
 
@@ -106,7 +121,9 @@ public class SSLReportAnalyzer {
           Certificate trusted = ks.getCertificate(alias);
           try {
             tail.verify(trusted.getPublicKey());
-            System.out.printf("I did some extra digging and found the issuer of this last certificate in your system's default keystore.\n");
+            System.out.println();
+            System.out.printf("I did some extra digging and found the issuer of this last certificate in your system's default keystore\n");
+            System.out.printf("  Path to system keystore: %s\n", KeyStoreBuilder.defaultTrustStorePath);
             System.out.printf("  The system's keystore alias for the issuer is '%s'\n", alias);
           } catch (CertificateException | NoSuchAlgorithmException | InvalidKeyException | NoSuchProviderException | SignatureException e) {
             // Nothing

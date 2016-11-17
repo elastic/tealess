@@ -49,6 +49,10 @@ public class SSLContextBuilder {
     this.trustStore = trustStore;
   }
 
+  public KeyStore getTrustStore() {
+    return this.trustStore;
+  }
+
   public SSLContext build() throws KeyManagementException, KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException {
     SSLContext ctx = SSLContext.getInstance("TLS");
     KeyManager[] kms = null;
