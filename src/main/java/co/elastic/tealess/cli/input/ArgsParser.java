@@ -34,7 +34,7 @@ public class ArgsParser {
 
   private static final Logger logger = LogManager.getLogger();
 
-  public static ParserResult parseFlags(List<Setting<?>> settings, List<Setting<?>> arguments, Iterator<String> args) {
+  public static ParserResult parse(List<Setting<?>> settings, List<Setting<?>> arguments, Iterator<String> args) {
     String firstArgument;
     int argi = 0;
     ParserResult result;
@@ -84,7 +84,6 @@ public class ArgsParser {
     if (argi >= arguments.size()) {
       return ParserResult.error(String.format("Too many arguments given. Extra argument: '%s' is not allowed.", text));
     }
-    System.out.println("Parsing arg " + text);
 
     Setting<?> setting = arguments.get(argi);
     try {
@@ -124,11 +123,10 @@ public class ArgsParser {
     return ParserResult.success();
   }
 
-  public static void showHelp(List<Setting<?>> settings, List<Setting<?>> arguments) {
-    System.out.println("Tealess is a tool for figuring out why an SSL/TLS handshake fails");
-    System.out.println();
-    String args = arguments.stream().map(a -> a.getName()).collect(Collectors.joining(" "));
-    System.out.println("Usage: program [flags] arguments ...");
+  public static void showHelp(String name, String preamble, List<Setting<?>> settings, List<Setting<?>> arguments) {
+    System.out.println(preamble);
+    String argsHelp = arguments.stream().map(a -> a.getName()).collect(Collectors.joining(" "));
+    System.out.println("Usage: " + name + " [flags] " + argsHelp);
 
     System.out.println("Flags: ");
     for (Setting<?> setting : settings) {

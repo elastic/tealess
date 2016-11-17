@@ -81,16 +81,15 @@ public class ConnectCommand {
   public ParserResult parse(String[] args) throws ConfigurationProblem {
     Iterator<String> argsi = Arrays.asList(args).iterator();
 
-    ParserResult result = ArgsParser.parseFlags(flags, arguments, argsi);
+    ParserResult result = ArgsParser.parse(flags, arguments, argsi);
     if (!result.getSuccess()) {
       if (result.getDetails() != null) {
         System.out.println(result.getDetails());
         System.out.println();
       }
-      ArgsParser.showHelp(flags, arguments);
+      ArgsParser.showHelp("tealess", "Tealess is a tool for figuring out why an SSL/TLS handshake fails", flags, arguments);
       return result;
     }
-
 
     if (capath.getValue() != null) {
       try {
