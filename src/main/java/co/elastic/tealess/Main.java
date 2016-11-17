@@ -56,10 +56,10 @@ public class Main {
 
   public static void main(String[] args) throws Exception {
     try {
-      Main main = new Main();
-      main.parse(args);
-      main.run();
-    //} catch (Bug e) {
+      ConnectCommand command = new ConnectCommand();
+      command.parse(args);
+      command.run();
+      //} catch (Bug e) {
       //System.out.printf("Bug: %s\n", e.getMessage());
       //e.printStackTrace(System.out);
     } catch (ConfigurationProblem e) {
@@ -78,10 +78,10 @@ public class Main {
 
   private void parse(String[] args) throws ConfigurationProblem {
     if (args.length < 1) {
-      throw new ConfigurationProblem("Usage: tealess <command> ...");
+      throw new ConfigurationProblem("Usage: tealess [flags] address [port]");
     }
     // Main has no flag.
-    Iterator<String> argsi= Arrays.asList(args).iterator();
+    Iterator<String> argsi = Arrays.asList(args).iterator();
     command = argsi.next();
     List<String> remaining = new LinkedList<>();
     while (argsi.hasNext()) {
@@ -89,18 +89,5 @@ public class Main {
     }
     this.args = remaining.toArray(new String[0]);
   }
-
-  public void run() throws ConfigurationProblem, Bug {
-    switch (command) {
-      case "connect":
-        ConnectCommand sub = new ConnectCommand();
-        sub.parse(args);
-        sub.run();
-        break;
-      default:
-        System.out.println("Unknown command: " + command);
-        System.out.println("Available commands:");
-        System.out.println("connect");
-    }
-  }
 }
+
