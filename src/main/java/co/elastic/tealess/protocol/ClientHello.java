@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+package co.elastic.tealess.protocol;
 
 public class ClientHello {
   public static final ContentType contentType = ContentType.Handshake;

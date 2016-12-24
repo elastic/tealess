@@ -16,9 +16,29 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+package co.elastic.tealess.protocol;
+
+import java.nio.ByteBuffer;
 
 public class TLSPlaintext {
-  private ContentType contentType;
-  private ProtocolVersion protocolVersion;
-  private short length;
+  public final ContentType contentType;
+  public final ProtocolVersion protocolVersion;
+  public final int length;
+
+  protected TLSPlaintext(ContentType contentType, ProtocolVersion protocolVersion, int length) {
+    this.contentType = contentType;
+    this.protocolVersion = protocolVersion;
+    this.length = length;
+  }
+
+  public static TLSPlaintext fromByteBuffer(ByteBuffer buffer) {
+    int contentType = Byte.toUnsignedInt(buffer.get());
+    int major = Byte.toUnsignedInt(buffer.get());
+    int minor = Byte.toUnsignedInt(buffer.get());
+    int length = buffer.getShort();
+    return new TLSPlaintext(
+            ContentType.fromValue(contentType),
+            ProtocolVersion.fromValues(major, minor),
+            length);
+  }
 }

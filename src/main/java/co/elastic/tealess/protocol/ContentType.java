@@ -16,6 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+package co.elastic.tealess.protocol;
+
+import javafx.scene.control.TextFormatter;
 
 // Definitions from RFC5246 section 6.2.1
 public enum ContentType {
@@ -28,6 +31,15 @@ public enum ContentType {
 
   private ContentType(int value) {
     this.value = value;
+  }
+
+  public static ContentType fromValue(int value) {
+    for (ContentType contentType : values()) {
+      if (contentType.value == value) {
+        return contentType;
+      }
+    }
+    return null;
   }
 
   public int value() {
