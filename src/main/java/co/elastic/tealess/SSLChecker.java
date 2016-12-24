@@ -163,6 +163,7 @@ public class SSLChecker {
     ByteBuffer localWire = ByteBuffer.allocate(size);
     ByteBuffer peerText = ByteBuffer.allocate(size);
     ByteBuffer peerWire = ByteBuffer.allocate(size);
+
     localText.put("SSL TEST. HELLO.".getBytes());
     localText.flip();
 
