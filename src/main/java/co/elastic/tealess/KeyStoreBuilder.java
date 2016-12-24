@@ -41,18 +41,15 @@ import java.security.cert.X509Certificate;
 import java.util.Arrays;
 
 public class KeyStoreBuilder {
-  private static final String keyManagerAlgorithm = KeyManagerFactory.getDefaultAlgorithm();
-
   // Based on some quick research, this appears to be the default java trust store location
   public static final Path defaultTrustStorePath = Paths.get(System.getProperty("java.home"), "lib", "security", "cacerts");
-
+  private static final String keyManagerAlgorithm = KeyManagerFactory.getDefaultAlgorithm();
   // 'changeit' appears to be the default passphrase. I suppose it's ok. Or is it?!!!
   private static final char[] defaultTrustStorePassphrase = "changeit".toCharArray();
-
+  private static final Logger logger = LogManager.getLogger();
   private boolean modified;
   private KeyStore keyStore;
   private KeyManagerFactory keyManagerFactory;
-  private static final Logger logger = LogManager.getLogger();
 
   public KeyStoreBuilder() throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException {
     keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
@@ -82,12 +79,12 @@ public class KeyStoreBuilder {
           logger.info("Ignoring non-file '{}'", file);
         }
       }
-    } else{
+    } else {
       addCAPath(path.toFile());
     }
   }
 
-  void addCAPath(File file) throws CertificateException, FileNotFoundException, KeyStoreException {
+  private void addCAPath(File file) throws CertificateException, FileNotFoundException, KeyStoreException {
     FileInputStream in;
     in = new FileInputStream(file);
 
@@ -95,7 +92,7 @@ public class KeyStoreBuilder {
 
     int count = 0;
     for (Certificate cert : cf.generateCertificates(in)) {
-      logger.debug("Loaded certificate from {}: {}", file, ((X509Certificate)cert).getSubjectX500Principal());
+      logger.debug("Loaded certificate from {}: {}", file, ((X509Certificate) cert).getSubjectX500Principal());
       String alias = ((X509Certificate) cert).getSubjectX500Principal().toString();
       keyStore.setCertificateEntry(alias, cert);
       count++;
@@ -121,7 +118,7 @@ public class KeyStoreBuilder {
     }
   }
 
-  void useKeyStore(File path, char[] passphrase) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException {
+  private void useKeyStore(File path, char[] passphrase) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException {
     FileInputStream fs;
 
     fs = new FileInputStream(path);

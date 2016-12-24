@@ -45,12 +45,12 @@ public class SSLContextBuilder {
     this.keyStore = keyStore;
   }
 
-  public void setTrustStore(KeyStore trustStore) {
-    this.trustStore = trustStore;
-  }
-
   public KeyStore getTrustStore() {
     return this.trustStore;
+  }
+
+  public void setTrustStore(KeyStore trustStore) {
+    this.trustStore = trustStore;
   }
 
   public SSLContext build() throws KeyManagementException, KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException {

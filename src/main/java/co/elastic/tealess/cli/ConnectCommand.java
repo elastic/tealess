@@ -55,13 +55,13 @@ public class ConnectCommand implements Command {
   private final KeyStoreBuilder keys;
   private final KeyStoreBuilder trust;
 
-  private final Setting<Path> capath = new Setting<Path>("capath", "The path to a file containing one or more certificates to trust in PEM format.", PathInput.singleton);
-  private final Setting<Path> trustStore = new Setting<Path>("truststore", "The path to a java keystore or pkcs12 file containing certificate authorities to trust", PathInput.singleton)
+  private final Setting<Path> capath = new Setting<>("capath", "The path to a file containing one or more certificates to trust in PEM format.", PathInput.singleton);
+  private final Setting<Path> trustStore = new Setting<>("truststore", "The path to a java keystore or pkcs12 file containing certificate authorities to trust", PathInput.singleton)
           .setDefaultValue(KeyStoreBuilder.defaultTrustStorePath);
-  private final Setting<Path> keyStore = new Setting<Path>("keystore", "The path to a java keystore or pkcs12 file containing private key(s) and client certificates to use when connecting to a remote server.", PathInput.singleton);
+  private final Setting<Path> keyStore = new Setting<>("keystore", "The path to a java keystore or pkcs12 file containing private key(s) and client certificates to use when connecting to a remote server.", PathInput.singleton);
   private final Setting<Level> logLevel = new Setting<Level>("log-level", "The log level")
           .setDefaultValue(Level.INFO)
-          .parseWith(value -> Level.valueOf(value));
+          .parseWith(Level::valueOf);
   private final Setting<InetSocketAddress> address = new Setting<>("address", "The address in form of `host` or `host:port` to connect", new InetSocketAddressInput(443));
 
   // CLI arguments (not flag settings)
@@ -77,6 +77,10 @@ public class ConnectCommand implements Command {
     }
   }
 
+  static char[] promptSecret(String text) {
+    System.out.printf("%s: ", text);
+    return System.console().readPassword();
+  }
 
   public ParserResult parse(String[] args) throws ConfigurationProblem {
     Iterator<String> argsi = Arrays.asList(args).iterator();
@@ -161,7 +165,7 @@ public class ConnectCommand implements Command {
     List<SSLReport> successful = reports.stream().filter(SSLReport::success).collect(Collectors.toList());
 
     if (successful.size() > 0) {
-      successful.forEach(r -> System.out.printf("Success: %s\n", r.getAddress()));
+      successful.forEach(r -> System.out.printf("Success: %s\n", r));
     } else {
       System.out.println("All SSL/TLS connections failed.");
     }
@@ -178,10 +182,5 @@ public class ConnectCommand implements Command {
 
       SSLReportAnalyzer.analyze(blame, failures.get(0));
     }
-  }
-
-  static char[] promptSecret(String text) {
-    System.out.printf("%s: ", text);
-    return System.console().readPassword();
   }
 }

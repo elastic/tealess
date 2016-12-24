@@ -16,18 +16,32 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+package co.elastic.tealess.protocol;
 
-package co.elastic.tealess.cli;
+// Definitions from RFC5246 section 6.2.1
+public enum ContentType {
+  ChangeCipherSpec(20),
+  Alert(21),
+  Handshake(22),
+  ApplicationData(23);
 
-import co.elastic.Bug;
-import co.elastic.tealess.ConfigurationProblem;
-import co.elastic.tealess.cli.input.ParserResult;
+  private final int value;
 
-/**
- * Created by jls on 1/20/17.
- */
-public interface Command {
-  ParserResult parse(String[] args) throws ConfigurationProblem;
+  ContentType(int value) {
+    this.value = value;
+  }
 
-  void run() throws ConfigurationProblem, Bug;
+  public static ContentType fromValue(int value) {
+    for (ContentType contentType : values()) {
+      if (contentType.value == value) {
+        return contentType;
+      }
+    }
+    return null;
+  }
+
+  public int value() {
+    return value;
+  }
 }
+

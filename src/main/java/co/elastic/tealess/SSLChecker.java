@@ -35,7 +35,10 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.security.*;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.X509Certificate;
 
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.FINISHED;
@@ -52,9 +55,8 @@ public class SSLChecker {
   private static final long defaultTimeout = 1000;
   private final Resolver resolver = Resolver.SystemResolver;
   private final Logger logger = LogManager.getLogger();
+  private final SSLContextBuilder ctxbuilder;
   private SSLContext ctx;
-  private SSLContextBuilder ctxbuilder;
-
   private PeerCertificateDetails peerCertificateDetails;
 
   public SSLChecker(SSLContextBuilder cb) throws KeyManagementException, KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException {
@@ -163,6 +165,11 @@ public class SSLChecker {
     ByteBuffer localWire = ByteBuffer.allocate(size);
     ByteBuffer peerText = ByteBuffer.allocate(size);
     ByteBuffer peerWire = ByteBuffer.allocate(size);
+
+    // A copy of all wire data we read from the peer.
+    // This will be used to analyze the handshake later.
+    ByteBuffer peerWireCopy = ByteBuffer.allocate(20 << 10);
+
     localText.put("SSL TEST. HELLO.".getBytes());
     localText.flip();
 
@@ -191,8 +198,11 @@ public class SSLChecker {
             localWire.compact();
             break;
           case NEED_UNWRAP:
-             socket.read(peerWire);
-            //logger.trace("Read {} bytes [{}]", bytes, address);
+            socket.read(peerWire);
+            if (peerWire.position() + peerWireCopy.position() < peerWireCopy.limit()) {
+              peerWire.flip();
+              peerWireCopy.put(peerWire);
+            }
             peerWire.flip();
             result = sslEngine.unwrap(peerWire, peerText);
             state = result.getHandshakeStatus();
@@ -212,5 +222,6 @@ public class SSLChecker {
 
     // Handshake OK!
     sslReport.setSSLSession(sslEngine.getSession());
+    sslReport.setPeerData(peerWireCopy);
   }
 }

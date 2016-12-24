@@ -27,7 +27,7 @@ import java.net.InetSocketAddress;
  * Created by jls on 11/16/16.
  */
 public class InetSocketAddressInput implements InputHandler<InetSocketAddress> {
-  private int defaultPort;
+  private final int defaultPort;
 
   public InetSocketAddressInput(int defaultPort) {
     this.defaultPort = defaultPort;
@@ -37,15 +37,13 @@ public class InetSocketAddressInput implements InputHandler<InetSocketAddress> {
   public InetSocketAddress parse(String text) {
     // TODO: fix this for ipv6 addresses
     int colon = text.lastIndexOf(':');
-    if (colon == -1) {
-      colon = text.length();
-    }
-    String host = text.substring(0, colon - 1);
-
     int port = defaultPort;
-    if (colon < text.length()) {
-      port = Integer.parseInt(text.substring(colon + 1, text.length()));
+    if (colon == -1) {
+      return new InetSocketAddress(text, port);
     }
+
+    String host = text.substring(0, colon);
+    port = Integer.parseInt(text.substring(colon + 1, text.length()));
     return new InetSocketAddress(host, port);
   }
 

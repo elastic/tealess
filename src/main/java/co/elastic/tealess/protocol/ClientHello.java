@@ -16,18 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+package co.elastic.tealess.protocol;
 
-package co.elastic.tealess.cli;
-
-import co.elastic.Bug;
-import co.elastic.tealess.ConfigurationProblem;
-import co.elastic.tealess.cli.input.ParserResult;
-
-/**
- * Created by jls on 1/20/17.
- */
-public interface Command {
-  ParserResult parse(String[] args) throws ConfigurationProblem;
-
-  void run() throws ConfigurationProblem, Bug;
+class ClientHello {
+  public static final ContentType contentType = ContentType.Handshake;
 }
