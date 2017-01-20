@@ -49,7 +49,7 @@ import java.util.stream.Collectors;
 /**
  * Created by jls on 10/27/16.
  */
-public class ConnectCommand {
+public class ConnectCommand implements Command {
   private static final String PACKAGE_LOGGER_NAME = "co.elastic";
   private static final Logger logger = LogManager.getLogger();
   private final KeyStoreBuilder keys;

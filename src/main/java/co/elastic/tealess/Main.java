@@ -22,6 +22,7 @@ package co.elastic.tealess;
 import co.elastic.Blame;
 import co.elastic.Bug;
 import co.elastic.Resolver;
+import co.elastic.tealess.cli.Command;
 import co.elastic.tealess.cli.ConnectCommand;
 import co.elastic.tealess.cli.Setting;
 import co.elastic.tealess.cli.input.InvalidValue;
@@ -56,10 +57,24 @@ public class Main {
   private String[] args;
 
   public static void main(String[] args) throws Exception {
-    try {
-      ConnectCommand command = new ConnectCommand();
-      ParserResult result = command.parse(args);
+    String commandName = args[0];
 
+    Command command;
+
+    switch (commandName) {
+      case "connect":
+        command = new ConnectCommand();
+        break;
+      default:
+        System.out.printf("Unknown command: '%s'\n", commandName);
+        System.exit(1);
+        return;
+    }
+
+    try {
+      // Remove args[0] from args.
+      args = Arrays.asList(args).stream().skip(1).toArray(size -> new String[size]);
+      ParserResult result = command.parse(args);
       if (!result.getSuccess()) {
         if (result.getDetails() != null) {
           System.out.println("Problem: " + result.getDetails());
@@ -71,9 +86,6 @@ public class Main {
         return;
       }
       command.run();
-      //} catch (Bug e) {
-      //System.out.printf("Bug: %s\n", e.getMessage());
-      //e.printStackTrace(System.out);
     } catch (ConfigurationProblem e) {
       String message;
       if (e.getCause() != null) {
