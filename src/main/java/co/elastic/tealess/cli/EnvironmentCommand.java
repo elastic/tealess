@@ -53,15 +53,15 @@ public class EnvironmentCommand implements Command {
     SSLEngine engine = ctx.createSSLEngine();
 
     System.out.println("Supported protocols: ('+' means enabled by default) ");
-    for (String suite : engine.getSupportedProtocols()) {
+    Arrays.stream(engine.getSupportedProtocols()).sorted().forEach(suite -> {
       boolean enabled = Arrays.stream(engine.getEnabledProtocols()).anyMatch(s -> s.equals(suite));
       System.out.printf("%s %s\n", enabled ? "+" : " ", suite);
-    }
+    });
 
     System.out.println("Supported cipher suites: ('+' means enabled by default) ");
-    for (String suite : engine.getSupportedCipherSuites()) {
+    Arrays.stream(engine.getSupportedCipherSuites()).sorted().forEach(suite -> {
       boolean enabled = Arrays.stream(engine.getEnabledCipherSuites()).anyMatch(s -> s.equals(suite));
       System.out.printf("%s %s\n", enabled ? "+" : " ", suite);
-    }
+    });
   }
 }
