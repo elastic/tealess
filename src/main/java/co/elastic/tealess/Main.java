@@ -19,37 +19,18 @@
 
 package co.elastic.tealess;
 
-import co.elastic.Blame;
-import co.elastic.Bug;
-import co.elastic.Resolver;
 import co.elastic.tealess.cli.Command;
 import co.elastic.tealess.cli.ConnectCommand;
-import co.elastic.tealess.cli.Setting;
-import co.elastic.tealess.cli.input.InvalidValue;
 import co.elastic.tealess.cli.input.ParserResult;
-import co.elastic.tealess.cli.input.PathInput;
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.config.ConfigurationException;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
-import java.nio.file.Path;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 
-public class Main {
+class Main {
   private static final String PACKAGE_LOGGER_NAME = "co.elastic";
   private static final Logger logger = LogManager.getLogger();
 
@@ -73,7 +54,7 @@ public class Main {
 
     try {
       // Remove args[0] from args.
-      args = Arrays.asList(args).stream().skip(1).toArray(size -> new String[size]);
+      args = Arrays.stream(args).skip(1).toArray(String[]::new);
       ParserResult result = command.parse(args);
       if (!result.getSuccess()) {
         if (result.getDetails() != null) {

@@ -18,8 +18,6 @@
  */
 package co.elastic.tealess.protocol;
 
-import javafx.scene.control.TextFormatter;
-
 // Definitions from RFC5246 section 6.2.1
 public enum ContentType {
   ChangeCipherSpec(20),
@@ -29,7 +27,7 @@ public enum ContentType {
 
   private final int value;
 
-  private ContentType(int value) {
+  ContentType(int value) {
     this.value = value;
   }
 

@@ -18,6 +18,6 @@
  */
 package co.elastic.tealess.protocol;
 
-public class ClientHello {
+class ClientHello {
   public static final ContentType contentType = ContentType.Handshake;
 }

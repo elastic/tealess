@@ -19,42 +19,47 @@
 package co.elastic.tealess.protocol;
 
 public enum ProtocolVersion {
-  SSL_2_0(2,0),
-  SSL_3_0(3,0),
-  TLS_1_0(3,1),
-  TLS_1_1(3,2),
-  TLS_1_2(3,3);
+  SSL_2_0(2, 0),
+  SSL_3_0(3, 0),
+  TLS_1_0(3, 1),
+  TLS_1_1(3, 2),
+  TLS_1_2(3, 3);
 
   private final int major;
   private final int minor;
 
-  private ProtocolVersion(int major, int minor) {
+  ProtocolVersion(int major, int minor) {
     this.major = major;
     this.minor = minor;
   }
 
   public static ProtocolVersion fromValues(int major, int minor) {
-   if (major == 2 && minor == 0) {
-     return SSL_2_0;
-   } else if (major == 3 && minor == 0) {
-     return SSL_3_0;
-   } else if (major == 3 && minor == 1) {
-     return TLS_1_0;
-   } else if (major == 3 && minor == 2) {
-     return TLS_1_1;
-   } else if (major == 3 && minor == 3) {
-     return TLS_1_2;
-   }
-   throw new IllegalArgumentException("major,minor (" + major + ", " + minor + ") is not valid.");
+    if (major == 2 && minor == 0) {
+      return SSL_2_0;
+    } else if (major == 3 && minor == 0) {
+      return SSL_3_0;
+    } else if (major == 3 && minor == 1) {
+      return TLS_1_0;
+    } else if (major == 3 && minor == 2) {
+      return TLS_1_1;
+    } else if (major == 3 && minor == 3) {
+      return TLS_1_2;
+    }
+    throw new IllegalArgumentException("major,minor (" + major + ", " + minor + ") is not valid.");
   }
 
   public String toString() {
-    switch(this) {
-      case SSL_2_0: return "SSL 2.0";
-      case SSL_3_0: return "SSL 3.0";
-      case TLS_1_0: return "TLS 1.0";
-      case TLS_1_1: return "TLS 1.1";
-      case TLS_1_2: return "TLS 1.2";
+    switch (this) {
+      case SSL_2_0:
+        return "SSL 2.0";
+      case SSL_3_0:
+        return "SSL 3.0";
+      case TLS_1_0:
+        return "TLS 1.0";
+      case TLS_1_1:
+        return "TLS 1.1";
+      case TLS_1_2:
+        return "TLS 1.2";
     }
     // We won't get here.
     return "Unknown";

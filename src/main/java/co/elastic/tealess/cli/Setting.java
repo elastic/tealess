@@ -21,33 +21,12 @@ package co.elastic.tealess.cli;
 
 import co.elastic.tealess.cli.input.InvalidValue;
 
-import java.net.InetSocketAddress;
-
 public class Setting<T> {
-  private int argument = -1; // Nothing is an argument by default.
-
-  public String getDescription() {
-    return description;
-  }
-
-  public interface Validator<T> {
-    public boolean isValid(T value);
-  }
-
-  public interface Parser<T> {
-    public T parse(String text);
-  }
-
-  public interface InputHandler<T> extends Validator<T>, Parser<T> {
-    // Empty
-  }
-
   private final String name;
   private final String description;
-
+  private int argument = -1; // Nothing is an argument by default.
   private T default_value;
   private T value;
-
   private Parser<T> parser;
   private Validator<T> validator;
 
@@ -55,15 +34,22 @@ public class Setting<T> {
     this.name = name;
     this.description = description;
   }
-
   public Setting(String name, String description, InputHandler<T> handler) {
     this(name, description);
     parseWith(handler);
     validateWith(handler);
   }
 
+  public String getDescription() {
+    return description;
+  }
+
   public String getFlag() {
     return String.format("--%s", getName());
+  }
+
+  public T getDefaultValue() {
+    return default_value;
   }
 
   public Setting setDefaultValue(T value) {
@@ -71,16 +57,12 @@ public class Setting<T> {
     return this;
   }
 
-  public T getDefaultValue() {
-    return default_value;
-  }
-
   public Setting parseWith(Parser<T> parser) {
     this.parser = parser;
     return this;
   }
 
-  public Setting validateWith(Validator<T> validator) {
+  private Setting validateWith(Validator<T> validator) {
     this.validator = validator;
     return this;
   }
@@ -117,6 +99,18 @@ public class Setting<T> {
 
   public boolean isArgument() {
     return this.argument >= 0;
+  }
+
+  public interface Validator<T> {
+    boolean isValid(T value);
+  }
+
+  public interface Parser<T> {
+    T parse(String text);
+  }
+
+  public interface InputHandler<T> extends Validator<T>, Parser<T> {
+    // Empty
   }
 
 }

@@ -25,7 +25,7 @@ public class TLSPlaintext {
   public final ProtocolVersion protocolVersion;
   public final int length;
 
-  protected TLSPlaintext(ContentType contentType, ProtocolVersion protocolVersion, int length) {
+  private TLSPlaintext(ContentType contentType, ProtocolVersion protocolVersion, int length) {
     this.contentType = contentType;
     this.protocolVersion = protocolVersion;
     this.length = length;

@@ -27,6 +27,7 @@ import co.elastic.tealess.cli.input.ParserResult;
  * Created by jls on 1/20/17.
  */
 public interface Command {
-  public ParserResult parse(String[] args) throws ConfigurationProblem;
-  public void run() throws ConfigurationProblem, Bug;
+  ParserResult parse(String[] args) throws ConfigurationProblem;
+
+  void run() throws ConfigurationProblem, Bug;
 }

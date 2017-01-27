@@ -55,9 +55,8 @@ public class SSLChecker {
   private static final long defaultTimeout = 1000;
   private final Resolver resolver = Resolver.SystemResolver;
   private final Logger logger = LogManager.getLogger();
+  private final SSLContextBuilder ctxbuilder;
   private SSLContext ctx;
-  private SSLContextBuilder ctxbuilder;
-
   private PeerCertificateDetails peerCertificateDetails;
 
   public SSLChecker(SSLContextBuilder cb) throws KeyManagementException, KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException {

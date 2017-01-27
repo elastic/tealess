@@ -19,14 +19,11 @@
 
 package co.elastic.tealess.cli.input;
 
-import co.elastic.tealess.ConfigurationProblem;
 import co.elastic.tealess.cli.Setting;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.lang.reflect.Field;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -65,7 +62,7 @@ public class ArgsParser {
       }
     }
 
-    for (;args.hasNext(); argi++) {
+    for (; args.hasNext(); argi++) {
       String text = args.next();
       result = parseArgument(arguments, argi, text);
       if (!result.getSuccess()) {
@@ -125,7 +122,7 @@ public class ArgsParser {
 
   public static void showHelp(String name, String preamble, List<Setting<?>> settings, List<Setting<?>> arguments) {
     System.out.println(preamble);
-    String argsHelp = arguments.stream().map(a -> a.getName()).collect(Collectors.joining(" "));
+    String argsHelp = arguments.stream().map(Setting::getName).collect(Collectors.joining(" "));
     System.out.println("Usage: " + name + " [flags] " + argsHelp);
 
     System.out.println("Flags: ");

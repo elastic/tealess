@@ -30,7 +30,7 @@ public class PathInput implements InputHandler<Path> {
 
   @Override
   public boolean isValid(Path value) {
-    return Files.exists((Path) value);
+    return Files.exists(value);
   }
 
   @Override

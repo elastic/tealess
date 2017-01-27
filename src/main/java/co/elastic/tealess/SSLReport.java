@@ -97,7 +97,7 @@ public class SSLReport {
   void setHostnameVerified(boolean verified) {
     hostnameVerified = verified;
   }
-  
+
   public boolean success() {
     return exception == null;
   }
@@ -122,7 +122,7 @@ public class SSLReport {
     this.peerData = peerData;
   }
 
-  public TLSPlaintext getPeerHandshake() {
+  private TLSPlaintext getPeerHandshake() {
     peerData.flip();
     return TLSPlaintext.fromByteBuffer(peerData);
   }
