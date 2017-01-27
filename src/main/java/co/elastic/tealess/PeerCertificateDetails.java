@@ -21,18 +21,18 @@ package co.elastic.tealess;
 
 import java.security.cert.X509Certificate;
 
-public class PeerCertificateDetails {
+class PeerCertificateDetails {
   private final X509Certificate[] chain;
   private final String authType;
   private final Throwable exception;
 
-  public PeerCertificateDetails(X509Certificate[] chain, String authType, Throwable exception) {
+  PeerCertificateDetails(X509Certificate[] chain, String authType, Throwable exception) {
     this.chain = chain;
     this.authType = authType;
     this.exception = exception;
   }
 
-  public X509Certificate[] getChain() {
+  X509Certificate[] getChain() {
     return chain;
   }
 

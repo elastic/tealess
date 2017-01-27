@@ -30,11 +30,11 @@ import java.security.Principal;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 
-public class LoggingKeyManager extends X509ExtendedKeyManager {
+class LoggingKeyManager extends X509ExtendedKeyManager {
   private final X509ExtendedKeyManager keyManager;
   private final Logger logger = LogManager.getLogger();
 
-  public LoggingKeyManager(X509KeyManager km) {
+  LoggingKeyManager(X509KeyManager km) {
     keyManager = (X509ExtendedKeyManager) km;
   }
 

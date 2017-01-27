@@ -77,6 +77,10 @@ public class ConnectCommand implements Command {
     }
   }
 
+  static char[] promptSecret(String text) {
+    System.out.printf("%s: ", text);
+    return System.console().readPassword();
+  }
 
   public ParserResult parse(String[] args) throws ConfigurationProblem {
     Iterator<String> argsi = Arrays.asList(args).iterator();
@@ -161,7 +165,7 @@ public class ConnectCommand implements Command {
     List<SSLReport> successful = reports.stream().filter(SSLReport::success).collect(Collectors.toList());
 
     if (successful.size() > 0) {
-      successful.forEach(r -> System.out.printf("Success: %s\n", r.getAddress()));
+      successful.forEach(r -> System.out.printf("Success: %s\n", r));
     } else {
       System.out.println("All SSL/TLS connections failed.");
     }
@@ -178,10 +182,5 @@ public class ConnectCommand implements Command {
 
       SSLReportAnalyzer.analyze(blame, failures.get(0));
     }
-  }
-
-  static char[] promptSecret(String text) {
-    System.out.printf("%s: ", text);
-    return System.console().readPassword();
   }
 }

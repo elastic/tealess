@@ -19,9 +19,12 @@
 
 package co.elastic.tealess;
 
+import co.elastic.tealess.protocol.TLSPlaintext;
+
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 
 public class SSLReport {
   private Throwable exception;
@@ -33,6 +36,7 @@ public class SSLReport {
   private boolean hostnameVerified;
   private long timeout;
   private co.elastic.tealess.SSLContextBuilder SSLContextBuilder;
+  private ByteBuffer peerData;
 
   SSLReport() {
     // Nothing
@@ -86,31 +90,44 @@ public class SSLReport {
     return exception;
   }
 
-  void setHostnameVerified(boolean verified) {
-    hostnameVerified = verified;
-  }
-  
   boolean getHostnameVerified() {
     return hostnameVerified;
+  }
+
+  void setHostnameVerified(boolean verified) {
+    hostnameVerified = verified;
   }
   
   public boolean success() {
     return exception == null;
   }
 
+  public long getTimeout() {
+    return timeout;
+  }
+
   public void setTimeout(long timeout) {
     this.timeout = timeout;
   }
 
-  public long getTimeout() {
-    return timeout;
+  public SSLContextBuilder getSSLContextBuilder() {
+    return SSLContextBuilder;
   }
 
   public void setSSLContextBuilder(SSLContextBuilder SSLContextBuilder) {
     this.SSLContextBuilder = SSLContextBuilder;
   }
 
-  public SSLContextBuilder getSSLContextBuilder() {
-    return SSLContextBuilder;
+  public void setPeerData(ByteBuffer peerData) {
+    this.peerData = peerData;
+  }
+
+  public TLSPlaintext getPeerHandshake() {
+    peerData.flip();
+    return TLSPlaintext.fromByteBuffer(peerData);
+  }
+
+  public String toString() {
+    return String.format("%s [%s]", getAddress(), getPeerHandshake().protocolVersion);
   }
 }

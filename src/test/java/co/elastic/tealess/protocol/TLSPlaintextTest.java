@@ -18,11 +18,7 @@
  */
 package co.elastic.tealess.protocol;
 
-import co.elastic.tealess.protocol.ContentType;
-import co.elastic.tealess.protocol.ProtocolVersion;
-import co.elastic.tealess.protocol.TLSPlaintext;
 import org.junit.Test;
-import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,16 +26,19 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.ByteBuffer;
 
+import static org.junit.Assert.assertEquals;
+
 public class TLSPlaintextTest {
   @Test
   public void parseValidHeader() throws IOException {
-    URL url = getClass().getResource("TLS_1_0_ClientHello");
+    URL url = getClass().getResource("/TLS_1_0_ClientHello");
     URLConnection connection = url.openConnection();
     int size = connection.getContentLength();
     InputStream stream = (InputStream) connection.getContent();
 
     byte[] data = new byte[size];
     int len = stream.read(data);
+    assert (len == size);
     ByteBuffer buffer = ByteBuffer.wrap(data, 0, size);
     TLSPlaintext plaintext = TLSPlaintext.fromByteBuffer(buffer);
 

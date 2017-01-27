@@ -36,7 +36,7 @@ class KeyStoreUtils {
         trusted.add(keyStore.getCertificate(alias));
       }
     } catch (KeyStoreException e) {
-      throw new Bug("Somethign went wrong while trying to iterate over the certificates in a keystore.", e);
+      throw new Bug("Something went wrong while trying to iterate over the certificates in a keystore.", e);
     }
     return trusted;
   }
