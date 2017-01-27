@@ -24,6 +24,7 @@ import co.elastic.Bug;
 import co.elastic.Resolver;
 import co.elastic.tealess.cli.Command;
 import co.elastic.tealess.cli.ConnectCommand;
+import co.elastic.tealess.cli.EnvironmentCommand;
 import co.elastic.tealess.cli.Setting;
 import co.elastic.tealess.cli.input.InvalidValue;
 import co.elastic.tealess.cli.input.ParserResult;
@@ -33,6 +34,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.ConfigurationException;
+import org.apache.logging.log4j.core.lookup.EnvironmentLookup;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -64,6 +66,9 @@ public class Main {
     switch (commandName) {
       case "connect":
         command = new ConnectCommand();
+        break;
+      case "environment":
+        command = new EnvironmentCommand();
         break;
       default:
         System.out.printf("Unknown command: '%s'\n", commandName);
