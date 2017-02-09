@@ -21,14 +21,19 @@ package co.elastic.tealess.cli;
 
 import co.elastic.Bug;
 import co.elastic.tealess.ConfigurationProblem;
+import co.elastic.tealess.cli.environment.CipherSuite;
+import co.elastic.tealess.cli.environment.Protocol;
 import co.elastic.tealess.cli.input.ParserResult;
+import io.netty.handler.ssl.OpenSsl;
+import io.netty.util.Version;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by jls on 1/20/17.
@@ -37,31 +42,82 @@ public class EnvironmentCommand implements Command {
   private static final String PACKAGE_LOGGER_NAME = "co.elastic";
   private static final Logger logger = LogManager.getLogger();
 
+  public static Set<Protocol> getProtocols(SSLEngine engine) {
+    Set<Protocol> protocols = new TreeSet<>();
+    Arrays.stream(engine.getSupportedProtocols()).forEach(name -> {
+      boolean enabled = Arrays.stream(engine.getEnabledProtocols()).anyMatch(p -> p.equals(name));
+      protocols.add(new Protocol(name, enabled));
+    });
+    return protocols;
+  }
+
+  public static Set<CipherSuite> getCipherSuites(SSLEngine engine) {
+    Set<CipherSuite> suites = new TreeSet<CipherSuite>();
+
+    List<String> javaAllCiphers = Arrays.asList(engine.getSupportedCipherSuites());
+    List<String> javaEnabledCiphers = Arrays.asList(engine.getEnabledCipherSuites());
+    List<String> tcnativeCiphers = OpenSsl.availableJavaCipherSuites().stream().collect(Collectors.toList());
+
+    Set<String> ciphers = new TreeSet<>();
+    ciphers.addAll(javaAllCiphers);
+    ciphers.addAll(tcnativeCiphers);
+
+    ciphers.stream().sorted().forEach(suite -> {
+      boolean enabled = javaEnabledCiphers.contains(suite);
+      boolean java = javaAllCiphers.contains(suite);
+      boolean tcnative = tcnativeCiphers.contains(suite);
+      suites.add(new CipherSuite(suite, enabled, java, tcnative));
+    });
+    return suites;
+  }
+
   public ParserResult parse(String[] args) throws ConfigurationProblem {
     // Nothing to do. No flags.
     return ParserResult.success();
   }
 
-  public void run() throws ConfigurationProblem, Bug {
-    System.out.printf("Java %s %s\n", System.getProperty("java.runtime.name"), System.getProperty("java.version"));
+  public static SSLEngine getSSLEngine() throws Bug {
     SSLContext ctx = null;
     try {
       ctx = SSLContext.getDefault();
     } catch (NoSuchAlgorithmException e) {
       throw new Bug("Could not get default SSL Context. Something went wrong.", e);
     }
-    SSLEngine engine = ctx.createSSLEngine();
+    return ctx.createSSLEngine();
+  }
+
+  public void run() throws ConfigurationProblem, Bug {
+    System.out.printf("Java %s %s\n", System.getProperty("java.runtime.name"), System.getProperty("java.version"));
+
+    SSLEngine engine = getSSLEngine();
+
+    showNettyDetails();
+    
+    System.out.println();
 
     System.out.println("Supported protocols: ('+' means enabled by default) ");
-    Arrays.stream(engine.getSupportedProtocols()).sorted().forEach(suite -> {
-      boolean enabled = Arrays.stream(engine.getEnabledProtocols()).anyMatch(s -> s.equals(suite));
-      System.out.printf("%s %s\n", enabled ? "+" : " ", suite);
-    });
+    getProtocols(engine).stream().sorted().forEach(System.out::println);
 
     System.out.println("Supported cipher suites: ('+' means enabled by default) ");
-    Arrays.stream(engine.getSupportedCipherSuites()).sorted().forEach(suite -> {
-      boolean enabled = Arrays.stream(engine.getEnabledCipherSuites()).anyMatch(s -> s.equals(suite));
-      System.out.printf("%s %s\n", enabled ? "+" : " ", suite);
+    getCipherSuites(engine).stream().sorted().forEach(System.out::println);
+  }
+
+  private void showNettyDetails() {
+    if (OpenSsl.isAvailable()) {
+      System.out.printf("Netty OpenSSL support is available.\n");
+    } else {
+      Throwable e = OpenSsl.unavailabilityCause();
+      System.out.printf("Netty's OpenSSL layer could not be loaded: %s\n", e.getMessage());
+    }
+
+    System.out.println("Netty details:");
+    Map<String, Version> nettyComponents = Version.identify();
+    Version.identify().forEach((k, v) -> {
+      if (k.contains("tcnative")) {
+        System.out.printf("  %s\n", v);
+      }
     });
+
+
   }
 }
