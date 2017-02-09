@@ -105,16 +105,19 @@ public class EnvironmentCommand implements Command {
   private void showNettyDetails() {
     if (OpenSsl.isAvailable()) {
       System.out.printf("Netty OpenSSL support is available.\n");
-      Map<String, Version> nettyComponents = Version.identify();
-      Version.identify().forEach((k, v) -> {
-        if (k.contains("tcnative")) {
-          System.out.printf("  %s\n", v);
-        }
-      });
     } else {
       Throwable e = OpenSsl.unavailabilityCause();
       System.out.printf("Netty's OpenSSL layer could not be loaded: %s\n", e.getMessage());
     }
+
+    System.out.println("Netty details:");
+    Map<String, Version> nettyComponents = Version.identify();
+    Version.identify().forEach((k, v) -> {
+      if (k.contains("tcnative")) {
+        System.out.printf("  %s\n", v);
+      }
+    });
+
 
   }
 }
