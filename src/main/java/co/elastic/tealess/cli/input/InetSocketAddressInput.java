@@ -40,7 +40,7 @@ public class InetSocketAddressInput implements InputHandler<InetSocketAddress> {
     if (colon == -1) {
       colon = text.length();
     }
-    String host = text.substring(0, colon - 1);
+    String host = text.substring(0, colon);
 
     int port = defaultPort;
     if (colon < text.length()) {
