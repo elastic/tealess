@@ -19,37 +19,18 @@
 
 package co.elastic.tealess;
 
-import co.elastic.Blame;
-import co.elastic.Bug;
-import co.elastic.Resolver;
+import co.elastic.tealess.cli.BeatsCommand;
 import co.elastic.tealess.cli.Command;
 import co.elastic.tealess.cli.ConnectCommand;
 import co.elastic.tealess.cli.EnvironmentCommand;
-import co.elastic.tealess.cli.Setting;
-import co.elastic.tealess.cli.input.InvalidValue;
 import co.elastic.tealess.cli.input.ParserResult;
-import co.elastic.tealess.cli.input.PathInput;
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.apache.logging.log4j.core.lookup.EnvironmentLookup;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
-import java.nio.file.Path;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 
 public class Main {
   private static final String PACKAGE_LOGGER_NAME = "co.elastic";
@@ -59,6 +40,11 @@ public class Main {
   private String[] args;
 
   public static void main(String[] args) throws Exception {
+    if (args.length == 0) {
+      usage();
+      System.exit(1);
+    }
+
     String commandName = args[0];
 
     Command command;
@@ -69,6 +55,9 @@ public class Main {
         break;
       case "environment":
         command = new EnvironmentCommand();
+        break;
+      case "beats":
+        command = new BeatsCommand();
         break;
       default:
         System.out.printf("Unknown command: '%s'\n", commandName);
@@ -103,6 +92,13 @@ public class Main {
       System.out.println(message);
       System.exit(1);
     }
+  }
+
+  private static void usage() {
+    System.out.println("No command given.");
+    System.out.println("Command: ");
+    System.out.println("  connect");
+    System.out.println("  environment");
   }
 
   private void parse(String[] args) throws ConfigurationProblem {
