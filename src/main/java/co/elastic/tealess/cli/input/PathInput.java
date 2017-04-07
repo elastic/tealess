@@ -20,6 +20,7 @@
 package co.elastic.tealess.cli.input;
 
 import co.elastic.tealess.cli.Setting.InputHandler;
+import co.elastic.tealess.cli.ValidationResult;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,8 +30,12 @@ public class PathInput implements InputHandler<Path> {
   public static final PathInput singleton = new PathInput();
 
   @Override
-  public boolean isValid(Path value) {
-    return Files.exists((Path) value);
+  public ValidationResult validate(Path value) {
+    if (Files.exists((Path) value)) {
+      return ValidationResult.Good();
+    } else {
+      return ValidationResult.Bad("File does not exist: " + value);
+    }
   }
 
   @Override

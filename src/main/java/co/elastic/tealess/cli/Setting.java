@@ -21,8 +21,6 @@ package co.elastic.tealess.cli;
 
 import co.elastic.tealess.cli.input.InvalidValue;
 
-import java.net.InetSocketAddress;
-
 public class Setting<T> {
   private int argument = -1; // Nothing is an argument by default.
 
@@ -31,7 +29,7 @@ public class Setting<T> {
   }
 
   public interface Validator<T> {
-    public boolean isValid(T value);
+    public ValidationResult validate(T value);
   }
 
   public interface Parser<T> {
@@ -93,8 +91,9 @@ public class Setting<T> {
     T value = this.parser.parse(text);
 
     if (this.validator != null) {
-      if (!this.validator.isValid(value)) {
-        throw new InvalidValue(String.format("Invalid value for %s: %s", getName(), value), value);
+      ValidationResult result = validator.validate(value);
+      if (!result.isValid()) {
+        throw new InvalidValue(String.format("Validation for %s failed. %s", getName(), result.getDetails()), value);
       }
     }
 

@@ -20,6 +20,7 @@
 package co.elastic.tealess.cli.input;
 
 import co.elastic.tealess.cli.Setting.InputHandler;
+import co.elastic.tealess.cli.ValidationResult;
 
 import java.net.InetSocketAddress;
 
@@ -50,8 +51,12 @@ public class InetSocketAddressInput implements InputHandler<InetSocketAddress> {
   }
 
   @Override
-  public boolean isValid(InetSocketAddress value) {
+  public ValidationResult validate(InetSocketAddress value) {
     // Maybe this could be better validation?
-    return value.getPort() >= 0 && value.getPort() <= 65535;
+    if (value.getPort() >= 0 && value.getPort() <= 65535) {
+      return ValidationResult.Good();
+    } else {
+      return ValidationResult.Bad("Port value must be between 1 and 65535. Port was set to " + value.getPort());
+    }
   }
 }
