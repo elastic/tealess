@@ -25,16 +25,37 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class ArgsParser {
-
   private static final Logger logger = LogManager.getLogger();
 
-  public static ParserResult parse(List<Setting<?>> settings, List<Setting<?>> arguments, Iterator<String> args) {
+  private List<Setting<?>> namedSettings = new LinkedList<>();
+  private List<Setting<?>> positionalSettings = new LinkedList<>();
+  private String description;
+
+  public void setDescription(String description) {
+    this.description = description;
+  }
+
+  public Setting addNamed(Setting setting) {
+    namedSettings.add(setting);
+    return setting;
+  }
+
+  public Setting addPositional(Setting setting) {
+    positionalSettings.add(setting);
+    return setting;
+  }
+
+  public ParserResult parse(String[] args) {
+    return parse(Arrays.asList(args).iterator());
+  }
+  public ParserResult parse(Iterator<String> args) {
     String firstArgument;
     int argi = 0;
     ParserResult result;
@@ -50,13 +71,13 @@ public class ArgsParser {
       }
 
       if (entry.startsWith("-")) {
-        result = parseFlag(entry, args, settings, arguments);
+        result = parseFlag(entry, args, namedSettings, positionalSettings);
         if (!result.getSuccess()) {
           return result;
         }
       } else {
         // First non-flag argument.
-        result = parseArgument(arguments, argi, entry);
+        result = parseArgument(positionalSettings, argi, entry);
         argi++;
         if (!result.getSuccess()) {
           return result;
@@ -67,25 +88,25 @@ public class ArgsParser {
 
     for (;args.hasNext(); argi++) {
       String text = args.next();
-      result = parseArgument(arguments, argi, text);
+      result = parseArgument(positionalSettings, argi, text);
       if (!result.getSuccess()) {
         return result;
       }
     }
 
-    if (argi < arguments.size()) {
-      return ParserResult.error("Missing required argument " + arguments.get(argi).getName());
+    if (argi < positionalSettings.size()) {
+      return ParserResult.error("Missing required argument " + positionalSettings.get(argi).getName());
     }
 
     return ParserResult.success();
   }
 
-  private static ParserResult parseArgument(List<Setting<?>> arguments, int argi, String text) {
-    if (argi >= arguments.size()) {
+  private static ParserResult parseArgument(List<Setting<?>> positionalSettings, int argi, String text) {
+    if (argi >= positionalSettings.size()) {
       return ParserResult.error(String.format("Too many arguments given. Extra argument: '%s' is not allowed.", text));
     }
 
-    Setting<?> setting = arguments.get(argi);
+    Setting<?> setting = positionalSettings.get(argi);
     try {
       Object value = setting.parse(text);
       logger.debug("Argument '{}' with text '{}' parsed: {}", setting.getName(), text, value);
@@ -96,10 +117,10 @@ public class ArgsParser {
 
   }
 
-  private static ParserResult parseFlag(String entry, Iterator<String> args, List<Setting<?>> settings, List<Setting<?>> arguments) {
+  private static ParserResult parseFlag(String entry, Iterator<String> args, List<Setting<?>> namedSettings, List<Setting<?>> positionalSettings) {
     boolean flagFound = false;
-    for (Setting<?> setting : settings) {
-      if (arguments.contains(setting)) {
+    for (Setting<?> setting : namedSettings) {
+      if (positionalSettings.contains(setting)) {
         // Don't process an argument setting as a flag.
         continue;
       }
@@ -123,13 +144,17 @@ public class ArgsParser {
     return ParserResult.success();
   }
 
-  public static void showHelp(String name, String preamble, List<Setting<?>> settings, List<Setting<?>> arguments) {
+  public void showHelp(String name) {
+    showHelp(name, description, namedSettings, positionalSettings);
+  }
+
+  private static void showHelp(String name, String preamble, List<Setting<?>> namedSettings, List<Setting<?>> positionalSettings) {
     System.out.println(preamble);
-    String argsHelp = arguments.stream().map(a -> a.getName()).collect(Collectors.joining(" "));
+    String argsHelp = positionalSettings.stream().map(a -> a.getName()).collect(Collectors.joining(" "));
     System.out.println("Usage: " + name + " [flags] " + argsHelp);
 
     System.out.println("Flags: ");
-    for (Setting<?> setting : settings) {
+    for (Setting<?> setting : namedSettings) {
       String lead = String.format("%s VALUE", setting.getFlag());
       System.out.printf("  %-20s %s", lead, setting.getDescription());
       if (setting.getDefaultValue() != null) {
@@ -139,7 +164,7 @@ public class ArgsParser {
     }
 
     System.out.println("Arguments: ");
-    for (Setting<?> setting : arguments) {
+    for (Setting<?> setting : positionalSettings) {
       String lead = String.format("%s VALUE", setting.getName());
       System.out.printf("  %-20s %s", lead, setting.getDescription());
       if (setting.getDefaultValue() != null) {

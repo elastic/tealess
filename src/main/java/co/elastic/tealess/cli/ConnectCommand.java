@@ -52,21 +52,20 @@ import java.util.stream.Collectors;
 public class ConnectCommand implements Command {
   private static final String PACKAGE_LOGGER_NAME = "co.elastic";
   private static final Logger logger = LogManager.getLogger();
+  public static final String DESCRIPTION = "Connect to an address with SSL/TLS and diagnose the result.";
   private final KeyStoreBuilder keys;
   private final KeyStoreBuilder trust;
 
-  private final Setting<Path> capath = new Setting<Path>("capath", "The path to a file containing one or more certificates to trust in PEM format.", PathInput.singleton);
-  private final Setting<Path> trustStore = new Setting<Path>("truststore", "The path to a java keystore or pkcs12 file containing certificate authorities to trust", PathInput.singleton)
+  private final ArgsParser parser = new ArgsParser();
+
+  private final Setting<Path> capath = parser.addNamed(new Setting<Path>("capath", "The path to a file containing one or more certificates to trust in PEM format.", PathInput.singleton));
+  private final Setting<Path> trustStore = parser.addNamed(new Setting<Path>("truststore", "The path to a java keystore or pkcs12 file containing certificate authorities to trust", PathInput.singleton))
           .setDefaultValue(KeyStoreBuilder.defaultTrustStorePath);
-  private final Setting<Path> keyStore = new Setting<Path>("keystore", "The path to a java keystore or pkcs12 file containing private key(s) and client certificates to use when connecting to a remote server.", PathInput.singleton);
-  private final Setting<Level> logLevel = new Setting<Level>("log-level", "The log level")
+  private final Setting<Path> keyStore = parser.addNamed(new Setting<Path>("keystore", "The path to a java keystore or pkcs12 file containing private key(s) and client certificates to use when connecting to a remote server.", PathInput.singleton));
+  private final Setting<Level> logLevel = parser.addNamed(new Setting<Level>("log-level", "The log level"))
           .setDefaultValue(Level.INFO)
           .parseWith(value -> Level.valueOf(value));
-  private final Setting<InetSocketAddress> address = new Setting<>("address", "The address in form of `host` or `host:port` to connect", new InetSocketAddressInput(443));
-
-  // CLI arguments (not flag settings)
-  private final List<Setting<?>> arguments = Arrays.asList(new Setting<?>[]{address});
-  private final List<Setting<?>> flags = Arrays.asList(new Setting<?>[]{capath, trustStore, keyStore, logLevel});
+  private final Setting<InetSocketAddress> address = parser.addPositional(new Setting<>("address", "The address in form of `host` or `host:port` to connect", new InetSocketAddressInput(443)));
 
   public ConnectCommand() throws Bug, ConfigurationProblem {
     try {
@@ -77,17 +76,17 @@ public class ConnectCommand implements Command {
     }
   }
 
-
   public ParserResult parse(String[] args) throws ConfigurationProblem {
+    parser.setDescription(DESCRIPTION);
     Iterator<String> argsi = Arrays.asList(args).iterator();
 
-    ParserResult result = ArgsParser.parse(flags, arguments, argsi);
+    ParserResult result = parser.parse(argsi);
     if (!result.getSuccess()) {
       if (result.getDetails() != null) {
         System.out.println(result.getDetails());
         System.out.println();
       }
-      ArgsParser.showHelp("tealess", "Tealess is a tool for figuring out why an SSL/TLS handshake fails", flags, arguments);
+      parser.showHelp("tealess");
       return result;
     }
 
