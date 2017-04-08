@@ -81,15 +81,14 @@ public class Main {
       }
       command.run();
     } catch (ConfigurationProblem e) {
-      String message;
       if (e.getCause() != null) {
-        message = String.format("Configuration error: %s. Reason: %s", e.getMessage(), e.getCause());
-        System.out.println(e.getCause().getMessage());
+        String message = String.format("Configuration error: %s. Reason: %s", e.getMessage(), e.getCause());
+        System.out.println(message);
         e.getCause().printStackTrace(System.out);
       } else {
-        message = String.format("Configuration error: %s.", e.getMessage());
+        String message = String.format("Configuration error: %s.", e.getMessage());
+        System.out.println(message);
       }
-      System.out.println(message);
       System.exit(1);
     }
   }

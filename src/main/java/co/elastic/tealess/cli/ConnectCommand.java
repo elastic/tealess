@@ -76,7 +76,7 @@ public class ConnectCommand implements Command {
     }
   }
 
-  public ParserResult parse(String[] args) throws ConfigurationProblem {
+ public ParserResult parse(String[] args) throws ConfigurationProblem {
     parser.setDescription(DESCRIPTION);
     Iterator<String> argsi = Arrays.asList(args).iterator();
 

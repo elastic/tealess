@@ -1,0 +1,5 @@
+output.logstash:
+  hosts: ["192.168.1.42:5044", "127.0.0.1:1234"]
+  #ssl.certificate_authorities: ["/etc/pki/root/ca.pem"]
+  ssl.certificate: "/etc/pki/client/cert.pem"
+  ssl.key: "/etc/pki/client/cert.key"
