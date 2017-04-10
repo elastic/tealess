@@ -19,6 +19,8 @@
 
 package co.elastic.tealess;
 
+import co.elastic.Blame;
+
 import javax.net.ssl.SSLParameters;
 import java.io.IOException;
 import java.security.*;
@@ -27,8 +29,35 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Enumeration;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class SSLReportAnalyzer {
+
+  public static void analyzeMany(List<SSLReport> reports) {
+    List<SSLReport> successful = reports.stream().filter(SSLReport::success).collect(Collectors.toList());
+
+    if (successful.size() > 0) {
+      successful.forEach(r -> System.out.printf("Success: %s\n", r.getAddress()));
+    } else {
+      System.out.println("All SSL/TLS connections failed.");
+    }
+
+    Map<Class<? extends Throwable>, List<SSLReport>> failureGroups = reports.stream().filter(r -> !r.success()).collect(Collectors.groupingBy(r -> Blame.get(r.getException()).getClass()));
+    for (Map.Entry<Class<? extends Throwable>, List<SSLReport>> entry : failureGroups.entrySet()) {
+      Class<? extends Throwable> blame = entry.getKey();
+      List<SSLReport> failures = entry.getValue();
+      System.out.println();
+      System.out.printf("Failure: %s\n", blame);
+      for (SSLReport r : failures) {
+        System.out.printf("  %s\n", r.getAddress());
+      }
+
+      analyze(blame, failures.get(0));
+      failures.get(0).getException().printStackTrace();
+    }
+  }
 
   /* TODO: Use org.apache.logging.log4j.message.ParameterizedMessage to format the report. */
 
@@ -43,9 +72,17 @@ public class SSLReportAnalyzer {
       analyzeTimeout(report);
     } else if (blame == javax.net.ssl.SSLHandshakeException.class) {
       analyzeHandshakeProblem(report);
+    } else if (blame == javax.net.ssl.SSLException.class && report.getException().getMessage().matches("Received fatal alert: handshake_failure")) {
+      analyzeHandshakeRejected(report);
     } else {
       System.out.println("  Analysis: " + report.getException().getMessage());
     }
+  }
+
+  private static void analyzeHandshakeRejected(SSLReport report) {
+    System.out.println("  The SSL/TLS handshake attempt was terminated by the remote server.");
+    System.out.println("  One possibility is that the server requires the client to provide a certificate for validation, and maybe the client did not provide one.");
+
   }
 
   private static void analyzeTimeout(SSLReport report) {
