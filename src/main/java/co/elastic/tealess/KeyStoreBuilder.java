@@ -26,7 +26,6 @@ import org.apache.logging.log4j.Logger;
 import javax.net.ssl.KeyManagerFactory;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -73,15 +72,13 @@ public class KeyStoreBuilder {
 
   // XXX: This only supports RSA keys right now.
   public void addPrivateKeyPEM(Path keyPath, Path certificatePath) throws IOException, Bug, ConfigurationProblem {
-    PrivateKey key = null;
+    PrivateKey key;
     try {
       key = KeyStoreUtils.loadPrivateKeyPEM(keyPath);
-    } catch (NoSuchAlgorithmException e) {
-      throw new Bug("Unexpected problem when loading private key.", e);
-    } catch (InvalidKeySpecException e) {
+    } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
       throw new Bug("Unexpected problem when loading private key.", e);
     }
-    Collection<? extends Certificate> certificates = null;
+    Collection<? extends Certificate> certificates;
     try {
       certificates = parseCertificatesPath(certificatePath);
     } catch (CertificateException e) {
@@ -130,12 +127,9 @@ public class KeyStoreBuilder {
   }
 
   Collection<? extends Certificate> parseCertificatesPath(Path path) throws IOException, CertificateException {
-    FileInputStream in = new FileInputStream(path.toFile());
     CertificateFactory cf = CertificateFactory.getInstance("X.509");
-    try {
+    try (FileInputStream in = new FileInputStream(path.toFile())) {
       return cf.generateCertificates(in);
-    } finally {
-      in.close();
     }
   }
 

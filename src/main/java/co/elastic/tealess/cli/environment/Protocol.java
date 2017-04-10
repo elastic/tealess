@@ -19,8 +19,6 @@
 
 package co.elastic.tealess.cli.environment;
 
-import co.elastic.tealess.cli.EnvironmentCommand;
-
 /**
  * Created by jls on 2/2/17.
  */

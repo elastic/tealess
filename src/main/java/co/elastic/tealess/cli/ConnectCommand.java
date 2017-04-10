@@ -19,7 +19,6 @@
 
 package co.elastic.tealess.cli;
 
-import co.elastic.Blame;
 import co.elastic.Bug;
 import co.elastic.Resolver;
 import co.elastic.tealess.*;
@@ -32,7 +31,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -58,16 +56,16 @@ public class ConnectCommand implements Command {
 
   private final ArgsParser parser = new ArgsParser();
 
-  private final Setting<Path> capath = parser.addNamed(new Setting<Path>("capath", "The path to a file containing one or more certificates to trust in PEM format.", PathInput.singleton));
-  private final Setting<Path> trustStore = parser.addNamed(new Setting<Path>("truststore", "The path to a java keystore or pkcs12 file containing certificate authorities to trust", PathInput.singleton))
+  private final Setting<Path> capath = parser.addNamed(new Setting<>("capath", "The path to a file containing one or more certificates to trust in PEM format.", PathInput.singleton));
+  private final Setting<Path> trustStore = parser.addNamed(new Setting<>("truststore", "The path to a java keystore or pkcs12 file containing certificate authorities to trust", PathInput.singleton))
           .setDefaultValue(KeyStoreBuilder.defaultTrustStorePath);
-  private final Setting<Path> keyStore = parser.addNamed(new Setting<Path>("keystore", "The path to a java keystore or pkcs12 file containing private key(s) and client certificates to use when connecting to a remote server.", PathInput.singleton));
+  private final Setting<Path> keyStore = parser.addNamed(new Setting<>("keystore", "The path to a java keystore or pkcs12 file containing private key(s) and client certificates to use when connecting to a remote server.", PathInput.singleton));
   private final Setting<Level> logLevel = parser.addNamed(new Setting<Level>("log-level", "The log level"))
           .setDefaultValue(Level.INFO)
-          .parseWith(value -> Level.valueOf(value));
+          .parseWith(Level::valueOf);
   private final Setting<InetSocketAddress> address = parser.addPositional(new Setting<>("address", "The address in form of `host` or `host:port` to connect", new InetSocketAddressInput(443)));
 
-  public ConnectCommand() throws Bug, ConfigurationProblem {
+  public ConnectCommand() throws Bug {
     try {
       keys = new KeyStoreBuilder();
       trust = new KeyStoreBuilder();
@@ -76,7 +74,7 @@ public class ConnectCommand implements Command {
     }
   }
 
- public ParserResult parse(String[] args) throws ConfigurationProblem {
+ public ParserResult parse(String[] args) {
     parser.setDescription(DESCRIPTION);
     Iterator<String> argsi = Arrays.asList(args).iterator();
 

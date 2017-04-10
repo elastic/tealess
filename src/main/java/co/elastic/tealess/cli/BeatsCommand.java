@@ -1,6 +1,5 @@
 package co.elastic.tealess.cli;
 
-import co.elastic.Blame;
 import co.elastic.Bug;
 import co.elastic.Resolver;
 import co.elastic.tealess.*;
@@ -8,10 +7,8 @@ import co.elastic.tealess.cli.input.ArgsParser;
 import co.elastic.tealess.cli.input.InetSocketAddressInput;
 import co.elastic.tealess.cli.input.ParserResult;
 import co.elastic.tealess.cli.input.PathInput;
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.core.LoggerContext;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;
@@ -40,13 +37,13 @@ public class BeatsCommand implements Command {
   private static final String DESCRIPTION = "Test TLS settings from an Elastic Beats configuration.";
 
   private final ArgsParser parser = new ArgsParser();
-  private final Setting<Path> settingsPath = parser.addPositional(new Setting<Path>("settings", "The path to the beats yaml", PathInput.singleton));
+  private final Setting<Path> settingsPath = parser.addPositional(new Setting<>("settings", "The path to the beats yaml", PathInput.singleton));
 
   // Beats output configuration sections to analyze.
   private final String[] outputs = { "logstash", "elasticsearch", "redis", "kafka" };
 
   @Override
-  public ParserResult parse(String[] args) throws ConfigurationProblem {
+  public ParserResult parse(String[] args) {
     parser.setDescription(DESCRIPTION);
     ParserResult result = parser.parse(args);
     if (!result.getSuccess()) {
@@ -64,7 +61,7 @@ public class BeatsCommand implements Command {
   @Override
   public void run() throws ConfigurationProblem, Bug {
    Yaml yaml = new Yaml();
-    Map<String, Object> settings = null;
+    Map<String, Object> settings;
     try {
       settings = (Map<String, Object>) yaml.load(new FileReader(settingsPath.getValue().toFile()));
     } catch (FileNotFoundException e) {

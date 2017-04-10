@@ -39,7 +39,6 @@ import java.util.stream.Collectors;
  * Created by jls on 1/20/17.
  */
 public class EnvironmentCommand implements Command {
-  private static final String PACKAGE_LOGGER_NAME = "co.elastic";
   private static final Logger logger = LogManager.getLogger();
 
   public static Set<Protocol> getProtocols(SSLEngine engine) {
@@ -52,11 +51,11 @@ public class EnvironmentCommand implements Command {
   }
 
   public static Set<CipherSuite> getCipherSuites(SSLEngine engine) {
-    Set<CipherSuite> suites = new TreeSet<CipherSuite>();
+    Set<CipherSuite> suites = new TreeSet<>();
 
     List<String> javaAllCiphers = Arrays.asList(engine.getSupportedCipherSuites());
     List<String> javaEnabledCiphers = Arrays.asList(engine.getEnabledCipherSuites());
-    List<String> tcnativeCiphers = OpenSsl.availableJavaCipherSuites().stream().collect(Collectors.toList());
+    List<String> tcnativeCiphers = new ArrayList<>(OpenSsl.availableJavaCipherSuites());
 
     Set<String> ciphers = new TreeSet<>();
     ciphers.addAll(javaAllCiphers);
@@ -71,13 +70,13 @@ public class EnvironmentCommand implements Command {
     return suites;
   }
 
-  public ParserResult parse(String[] args) throws ConfigurationProblem {
+  public ParserResult parse(String[] args) {
     // Nothing to do. No flags.
     return ParserResult.success();
   }
 
   public static SSLEngine getSSLEngine() throws Bug {
-    SSLContext ctx = null;
+    SSLContext ctx;
     try {
       ctx = SSLContext.getDefault();
     } catch (NoSuchAlgorithmException e) {

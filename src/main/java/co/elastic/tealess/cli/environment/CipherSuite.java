@@ -19,8 +19,6 @@
 
 package co.elastic.tealess.cli.environment;
 
-import co.elastic.tealess.cli.EnvironmentCommand;
-
 import java.util.LinkedList;
 import java.util.List;
 

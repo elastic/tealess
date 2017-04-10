@@ -32,8 +32,8 @@ public class ParserResult {
     this.details = details;
   }
 
-  private ParserResult(boolean success, String details, Throwable exception) {
-    this(success, details);
+  private ParserResult(String details, Throwable exception) {
+    this(false, details);
     this.exception = exception;
   }
 
@@ -63,6 +63,6 @@ public class ParserResult {
   }
 
   public static ParserResult error(String details, Throwable exception) {
-    return new ParserResult(false, details, exception);
+    return new ParserResult(details, exception);
   }
 }

@@ -8,12 +8,12 @@ import java.util.TreeMap;
  */
 public class MapUtil {
   public static Map<String, Object> flattenMap(Map<String, Object> in) {
-    return flattenMap(in, new TreeMap<String, Object>(), "");
+    return flattenMap(in, new TreeMap<>(), "");
   }
 
   private static Map<String, Object> flattenMap(Map<String, Object> in, Map<String, Object> out, String prefix) {
     for (Map.Entry<String, Object> kv : in.entrySet()) {
-      String key = null;
+      String key;
       if (prefix.isEmpty()) {
         key = kv.getKey();
       } else {

@@ -34,10 +34,6 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.security.*;
 import java.security.cert.X509Certificate;
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
 
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.FINISHED;
 
@@ -51,7 +47,6 @@ public class SSLChecker {
    */
 
   private static final long defaultTimeout = 1000;
-  private final Resolver resolver = Resolver.SystemResolver;
   private final Logger logger = LogManager.getLogger();
   private SSLContext ctx;
   private SSLContextBuilder ctxbuilder;

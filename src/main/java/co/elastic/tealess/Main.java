@@ -36,9 +36,6 @@ public class Main {
   private static final String PACKAGE_LOGGER_NAME = "co.elastic";
   private static final Logger logger = LogManager.getLogger();
 
-  private String command;
-  private String[] args;
-
   public static void main(String[] args) throws Exception {
     if (args.length == 0) {
       usage();
@@ -67,7 +64,7 @@ public class Main {
 
     try {
       // Remove args[0] from args.
-      args = Arrays.asList(args).stream().skip(1).toArray(size -> new String[size]);
+      args = Arrays.stream(args).skip(1).toArray(String[]::new);
       ParserResult result = command.parse(args);
       if (!result.getSuccess()) {
         if (result.getDetails() != null) {
@@ -100,18 +97,5 @@ public class Main {
     System.out.println("  environment");
   }
 
-  private void parse(String[] args) throws ConfigurationProblem {
-    if (args.length < 1) {
-      throw new ConfigurationProblem("Usage: tealess [flags] address [port]");
-    }
-    // Main has no flag.
-    Iterator<String> argsi = Arrays.asList(args).iterator();
-    command = argsi.next();
-    List<String> remaining = new LinkedList<>();
-    while (argsi.hasNext()) {
-      remaining.add(argsi.next());
-    }
-    this.args = remaining.toArray(new String[0]);
-  }
 }
 
