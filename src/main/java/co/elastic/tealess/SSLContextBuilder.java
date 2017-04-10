@@ -61,7 +61,7 @@ public class SSLContextBuilder {
     if (keyManagerFactory != null) {
       kms = Arrays.stream(keyManagerFactory.getKeyManagers())
               .map((km) -> new LoggingKeyManager((X509KeyManager) km))
-              .toArray(KeyManager[]::new);
+              .toArray(X509KeyManager[]::new);
     }
 
     if (trustStore != null) {

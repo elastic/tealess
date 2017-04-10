@@ -21,14 +21,22 @@ package co.elastic.tealess;
 
 import co.elastic.Bug;
 
-import java.security.KeyStore;
-import java.security.KeyStoreException;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.*;
 import java.security.cert.Certificate;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
 class KeyStoreUtils {
+  static final String RSA_PEM_HEADER = "-----BEGIN PRIVATE KEY-----";
+  static final String RSA_PEM_FOOTER = "-----END PRIVATE KEY-----";
+
   public static List<Certificate> getTrustedCertificates(KeyStore keyStore) throws Bug {
     List<Certificate> trusted = new LinkedList<>();
     try {
@@ -39,5 +47,34 @@ class KeyStoreUtils {
       throw new Bug("Somethign went wrong while trying to iterate over the certificates in a keystore.", e);
     }
     return trusted;
+  }
+
+  public static PrivateKey loadPrivateKeyPEM(Path path) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+
+    List<String> lines = Files.readAllLines(path);
+    List<String> keyLines = new LinkedList<>();
+
+    // Look for the key entry
+    boolean foundStart = false;
+      for (String line : lines) {
+      if (!foundStart) {
+        if (line.equals(RSA_PEM_HEADER)) {
+          foundStart = true;
+          continue;
+        }
+      } else {
+        if (line.equals(RSA_PEM_FOOTER)) {
+          break;
+        }
+      }
+      keyLines.add(line);
+    }
+
+    byte[] pkcs8bytes = Base64.getDecoder().decode(String.join("", keyLines).getBytes());
+
+    KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+
+    PKCS8EncodedKeySpec pkcs8 = new PKCS8EncodedKeySpec(pkcs8bytes);
+    return keyFactory.generatePrivate(pkcs8);
   }
 }

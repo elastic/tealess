@@ -27,16 +27,17 @@ import org.apache.logging.log4j.Logger;
 
 import javax.net.ssl.*;
 import java.io.IOException;
-import java.net.ConnectException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.SocketTimeoutException;
+import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.security.*;
 import java.security.cert.X509Certificate;
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.FINISHED;
 
@@ -65,12 +66,6 @@ public class SSLChecker {
 
   private void setPeerCertificateDetails(X509Certificate[] chain, String authType, Throwable exception) {
     peerCertificateDetails = new PeerCertificateDetails(chain, authType, exception);
-  }
-
-  public void check(String hostname, int port) throws IOException {
-    for (InetAddress address : this.resolver.resolve(hostname)) {
-      check(new InetSocketAddress(address, port), hostname);
-    }
   }
 
   public SSLReport check(InetSocketAddress address, String name) {
@@ -163,6 +158,8 @@ public class SSLChecker {
     ByteBuffer localWire = ByteBuffer.allocate(size);
     ByteBuffer peerText = ByteBuffer.allocate(size);
     ByteBuffer peerWire = ByteBuffer.allocate(size);
+
+    // TODO: I wonder... do we need to send any data at all?
     localText.put("SSL TEST. HELLO.".getBytes());
     localText.flip();
 

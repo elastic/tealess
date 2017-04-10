@@ -47,7 +47,7 @@ public class LoggingKeyManager extends X509ExtendedKeyManager {
   @Override
   public String chooseClientAlias(String[] keyType, Principal[] principals, Socket socket) {
     String result = keyManager.chooseClientAlias(keyType, principals, socket);
-    logger.debug("KeyManager.chooseClientAlias() => '{}'");
+    logger.debug("KeyManager.chooseClientAlias() => '{}'", result);
     return result;
   }
 
@@ -66,9 +66,13 @@ public class LoggingKeyManager extends X509ExtendedKeyManager {
 
   @Override
   public X509Certificate[] getCertificateChain(String alias) {
+    logger.trace("KeyManager.getCertificateChain({})", alias);
     X509Certificate[] result = keyManager.getCertificateChain(alias);
-    logger.info("Using client certificate alias '{}': {}", alias, result[0].getSubjectX500Principal());
-    logger.trace("KeyManager.getCertificateChain(\"{}\") [chain length {}] [subject {}]", alias, result.length, result[0].getSubjectX500Principal());
+    if (result != null && result.length > 0) {
+      logger.trace("KeyManager.getCertificateChain(\"{}\") [chain length {}] [subject {}]", alias, result.length, result[0].getSubjectX500Principal());
+    } else {
+      logger.trace("KeyManager.getCertificateChain(\"{}\") [chain length {}]", alias, result);
+    }
     return result;
   }
 
@@ -82,7 +86,7 @@ public class LoggingKeyManager extends X509ExtendedKeyManager {
   @Override
   public String chooseEngineClientAlias(String[] keyType, Principal[] issuers, SSLEngine engine) {
     String result = keyManager.chooseEngineClientAlias(keyType, issuers, engine);
-    logger.trace("KeyManager.chooseEngineClientAlias() => '{}'", result);
+    logger.trace("KeyManager.chooseEngineClientAlias({}, {}, {}) => {}", keyType, issuers, engine, result);
     return result;
   }
 }

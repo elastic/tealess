@@ -19,6 +19,7 @@
 
 package co.elastic.tealess;
 
+import co.elastic.Bug;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -30,15 +31,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
+import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
+import java.util.Collection;
 
 public class KeyStoreBuilder {
   private static final String keyManagerAlgorithm = KeyManagerFactory.getDefaultAlgorithm();
@@ -54,21 +54,54 @@ public class KeyStoreBuilder {
   private KeyManagerFactory keyManagerFactory;
   private static final Logger logger = LogManager.getLogger();
 
+  // the "hurray" passphrase is only to satisfy the KeyStore.load API
+  // (requires a passphrase, even when loading null).
+  private final char[] IN_MEMORY_KEYSTORE_PASSPHRASE = "hurray".toCharArray();
+
   public KeyStoreBuilder() throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException {
     keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
     // default to an empty KeyStore instance.
-    // the "hurray" passphrase is only to satisfy the KeyStore.load API
-    // (requires a passphrase, even when loading null).
-    keyStore.load(null, "hurray".toCharArray());
+    keyStore.load(null, IN_MEMORY_KEYSTORE_PASSPHRASE);
     keyManagerFactory = KeyManagerFactory.getInstance(keyManagerAlgorithm);
   }
 
   void useDefaultTrustStore() throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException {
+    logger.trace("Using default trust store: {}", defaultTrustStorePath);
     useKeyStore(defaultTrustStorePath.toFile(), defaultTrustStorePassphrase);
     modified = true;
   }
 
-  public void addCAPath(Path path) throws CertificateException, FileNotFoundException, KeyStoreException {
+  // XXX: This only supports RSA keys right now.
+  public void addPrivateKeyPEM(Path keyPath, Path certificatePath) throws IOException, Bug, ConfigurationProblem {
+    PrivateKey key = null;
+    try {
+      key = KeyStoreUtils.loadPrivateKeyPEM(keyPath);
+    } catch (NoSuchAlgorithmException e) {
+      throw new Bug("Unexpected problem when loading private key.", e);
+    } catch (InvalidKeySpecException e) {
+      throw new Bug("Unexpected problem when loading private key.", e);
+    }
+    Collection<? extends Certificate> certificates = null;
+    try {
+      certificates = parseCertificatesPath(certificatePath);
+    } catch (CertificateException e) {
+      throw new ConfigurationProblem("Failure loading certificates from " + certificatePath, e);
+    }
+    try {
+      logger.info("Adding key+cert named '{}' to internal keystore.", "mykey");
+      keyStore.setKeyEntry("mykey", key, IN_MEMORY_KEYSTORE_PASSPHRASE, certificates.toArray(new Certificate[0]));
+      keyManagerFactory.init(keyStore, IN_MEMORY_KEYSTORE_PASSPHRASE);
+    } catch (KeyStoreException e) {
+      throw new Bug("Failure trying to setKeyEntry in the in-memory keystore", e);
+    } catch (UnrecoverableKeyException e) {
+      throw new Bug("Corrupt or invalid keystore passphrase? This is a bug (since we are forming the keystore in-memory!", e);
+    } catch (NoSuchAlgorithmException e) {
+      throw new Bug("No such algorithm?", e);
+    }
+    modified = true;
+  }
+
+  public void addCAPath(Path path) throws CertificateException, IOException, KeyStoreException {
     if (path == null) {
       throw new NullPointerException("path must not be null");
     }
@@ -87,20 +120,23 @@ public class KeyStoreBuilder {
     }
   }
 
-  void addCAPath(File file) throws CertificateException, FileNotFoundException, KeyStoreException {
-    FileInputStream in;
-    in = new FileInputStream(file);
-
-    CertificateFactory cf = CertificateFactory.getInstance("X.509");
-
-    int count = 0;
-    for (Certificate cert : cf.generateCertificates(in)) {
+  void addCAPath(File file) throws CertificateException, IOException, KeyStoreException {
+    for (Certificate cert : parseCertificatesPath(file.toPath())) {
       logger.debug("Loaded certificate from {}: {}", file, ((X509Certificate)cert).getSubjectX500Principal());
       String alias = ((X509Certificate) cert).getSubjectX500Principal().toString();
       keyStore.setCertificateEntry(alias, cert);
-      count++;
     }
     modified = true;
+  }
+
+  Collection<? extends Certificate> parseCertificatesPath(Path path) throws IOException, CertificateException {
+    FileInputStream in = new FileInputStream(path.toFile());
+    CertificateFactory cf = CertificateFactory.getInstance("X.509");
+    try {
+      return cf.generateCertificates(in);
+    } finally {
+      in.close();
+    }
   }
 
   public void useKeyStore(File path) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException {
@@ -128,7 +164,7 @@ public class KeyStoreBuilder {
     keyStore.load(fs, passphrase);
     keyManagerFactory.init(keyStore, passphrase);
 
-    //logger.info("Loaded keyStore with {} certificates: {}", keyStoreTrustedCertificates(keyStore).size(), path);
+    logger.info("Loaded keyStore with {} certificates: {}", (keyStore).size(), path);
     modified = true;
   }
 
@@ -136,6 +172,7 @@ public class KeyStoreBuilder {
     if (!modified) {
       useDefaultTrustStore();
     }
+    logger.trace("Returning non-default keystore");
     return keyStore;
   }
 
