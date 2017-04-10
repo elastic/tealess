@@ -94,7 +94,7 @@ public class ConnectCommand implements Command {
       try {
         logger.info("Adding to trust: capath {}", capath.getValue());
         trust.addCAPath(capath.getValue());
-      } catch (CertificateException | FileNotFoundException | KeyStoreException e) {
+      } catch (CertificateException | IOException | KeyStoreException e) {
         return ParserResult.error("Failed adding certificate authorities from path " + capath.getValue(), e);
       }
     }
@@ -139,10 +139,9 @@ public class ConnectCommand implements Command {
       throw new ConfigurationProblem("Failed to build tealess context.", e);
     }
 
-    Collection<InetAddress> addresses;
-
     String hostname = address.getValue().getHostString();
 
+    Collection<InetAddress> addresses;
     try {
       logger.trace("Doing name resolution on {}", hostname);
       addresses = Resolver.SystemResolver.resolve(hostname);
@@ -157,26 +156,7 @@ public class ConnectCommand implements Command {
 
     System.out.println();
 
-    List<SSLReport> successful = reports.stream().filter(SSLReport::success).collect(Collectors.toList());
-
-    if (successful.size() > 0) {
-      successful.forEach(r -> System.out.printf("Success: %s\n", r.getAddress()));
-    } else {
-      System.out.println("All SSL/TLS connections failed.");
-    }
-
-    Map<Class<? extends Throwable>, List<SSLReport>> failureGroups = reports.stream().filter(r -> !r.success()).collect(Collectors.groupingBy(r -> Blame.get(r.getException()).getClass()));
-    for (Map.Entry<Class<? extends Throwable>, List<SSLReport>> entry : failureGroups.entrySet()) {
-      Class<? extends Throwable> blame = entry.getKey();
-      List<SSLReport> failures = entry.getValue();
-      System.out.println();
-      System.out.printf("Failure: %s\n", blame);
-      for (SSLReport r : failures) {
-        System.out.printf("  %s\n", r.getAddress());
-      }
-
-      SSLReportAnalyzer.analyze(blame, failures.get(0));
-    }
+    SSLReportAnalyzer.analyzeMany(reports);
   }
 
   static char[] promptSecret(String text) {
