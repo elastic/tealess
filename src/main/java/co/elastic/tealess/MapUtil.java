@@ -15,9 +15,9 @@ public class MapUtil {
     for (Map.Entry<String, Object> kv : in.entrySet()) {
       String key = null;
       if (prefix.isEmpty()) {
-        key = (String) kv.getKey();
+        key = kv.getKey();
       } else {
-        key = String.format("%s.%s", prefix, (String) kv.getKey());
+        key = String.format("%s.%s", prefix, kv.getKey());
       }
 
       Object value = kv.getValue();

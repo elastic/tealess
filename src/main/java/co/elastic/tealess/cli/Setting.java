@@ -29,11 +29,11 @@ public class Setting<T> {
   }
 
   public interface Validator<T> {
-    public ValidationResult validate(T value);
+    ValidationResult validate(T value);
   }
 
   public interface Parser<T> {
-    public T parse(String text);
+    T parse(String text);
   }
 
   public interface InputHandler<T> extends Validator<T>, Parser<T> {

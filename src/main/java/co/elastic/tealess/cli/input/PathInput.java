@@ -31,7 +31,7 @@ public class PathInput implements InputHandler<Path> {
 
   @Override
   public ValidationResult validate(Path value) {
-    if (Files.exists((Path) value)) {
+    if (Files.exists(value)) {
       return ValidationResult.Good();
     } else {
       return ValidationResult.Bad("File does not exist: " + value);
