@@ -20,9 +20,14 @@
 package co.elastic.tealess;
 
 import co.elastic.Blame;
+import co.elastic.tealess.tls.InvalidValue;
+import co.elastic.tealess.tls.TLSDecoder;
+import co.elastic.tealess.tls.TLSPlaintext;
 
 import javax.net.ssl.SSLParameters;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
 import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
@@ -74,6 +79,8 @@ public class SSLReportAnalyzer {
       analyzeHandshakeProblem(report);
     } else if (blame == javax.net.ssl.SSLException.class && report.getException().getMessage().matches("Received fatal alert: handshake_failure")) {
       analyzeHandshakeRejected(report);
+    } else if (blame == java.io.IOException.class) {
+      analyzeHandshakeRejected(report);
     } else {
       System.out.println("  Analysis: " + report.getException().getMessage());
     }
@@ -82,7 +89,28 @@ public class SSLReportAnalyzer {
   private static void analyzeHandshakeRejected(SSLReport report) {
     System.out.println("  The SSL/TLS handshake attempt was terminated by the remote server.");
     System.out.println("  One possibility is that the server requires the client to provide a certificate for validation, and maybe the client did not provide one.");
+    if (report.getIOObserver() == null) {
+      System.out.println("  -- No data was transmitted.. this is probably a bug in this tool.");
+      return;
+    }
 
+    ByteBuffer outputData = report.getIOObserver().getOutputData();
+    System.out.println("Sent frames: " + outputData);
+    try {
+      TLSPlaintext plaintext = TLSDecoder.decode(outputData);
+      System.out.println(plaintext);
+    } catch (InvalidValue invalidValue) {
+      invalidValue.printStackTrace();
+    }
+
+    ByteBuffer inputData = report.getIOObserver().getInputData();
+    System.out.println("Receive frames: " + inputData);
+    try {
+      TLSPlaintext plaintext = TLSDecoder.decode(inputData);
+      System.out.println(plaintext);
+    } catch (InvalidValue invalidValue) {
+      invalidValue.printStackTrace();
+    }
   }
 
   private static void analyzeTimeout(SSLReport report) {

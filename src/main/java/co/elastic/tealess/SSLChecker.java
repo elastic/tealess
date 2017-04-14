@@ -21,6 +21,8 @@ package co.elastic.tealess;
 
 import co.elastic.Blame;
 import co.elastic.Resolver;
+import co.elastic.tealess.tls.IOObserver;
+import co.elastic.tealess.tls.ObservingSSLEngine;
 import org.apache.http.conn.ssl.DefaultHostnameVerifier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -136,7 +138,9 @@ public class SSLChecker {
   private void checkHandshake(SSLReport sslReport, SocketChannel socket) {
     final InetSocketAddress address = sslReport.getAddress();
     final String name = sslReport.getHostname();
-    SSLEngine sslEngine = ctx.createSSLEngine(name, address.getPort());
+    IOObserver ioObserver = new IOObserver();
+    ObservingSSLEngine sslEngine = new ObservingSSLEngine(ctx.createSSLEngine(name, address.getPort()), ioObserver);
+    sslReport.setIOObserver(ioObserver);
     sslEngine.setUseClientMode(true);
 
     try {
@@ -183,8 +187,17 @@ public class SSLChecker {
             localWire.compact();
             break;
           case NEED_UNWRAP:
-             socket.read(peerWire);
-            //logger.trace("Read {} bytes [{}]", bytes, address);
+            // Try reading until we get data.
+            Selector selector = Selector.open();
+            while (peerWire.position() == 0) {
+              socket.read(peerWire);
+              try {
+                Thread.currentThread().sleep(5);
+              } catch (InterruptedException e) {
+                e.printStackTrace();
+              }
+            }
+            System.out.println("Read " + peerWire.position() + " bytes");
             peerWire.flip();
             result = sslEngine.unwrap(peerWire, peerText);
             state = result.getHandshakeStatus();

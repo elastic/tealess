@@ -19,12 +19,15 @@
 
 package co.elastic.tealess;
 
+import co.elastic.tealess.tls.IOObserver;
+
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
 import java.net.InetSocketAddress;
 
 public class SSLReport {
   private Throwable exception;
+  private IOObserver ioObserver;
   private SSLContext sslContext;
   private SSLSession sslSession;
   private InetSocketAddress address;
@@ -112,5 +115,13 @@ public class SSLReport {
 
   public SSLContextBuilder getSSLContextBuilder() {
     return SSLContextBuilder;
+  }
+
+  public IOObserver getIOObserver() {
+    return ioObserver;
+  }
+
+  public void setIOObserver(IOObserver ioObserver) {
+    this.ioObserver = ioObserver;
   }
 }
