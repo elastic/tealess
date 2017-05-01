@@ -20,12 +20,11 @@
 package co.elastic.tealess;
 
 import co.elastic.Blame;
-import co.elastic.tealess.tls.InvalidValue;
-import co.elastic.tealess.tls.TLSDecoder;
-import co.elastic.tealess.tls.TLSPlaintext;
+import co.elastic.tealess.tls.*;
 
 import javax.net.ssl.SSLParameters;
 import java.io.IOException;
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.security.*;
@@ -95,21 +94,39 @@ public class SSLReportAnalyzer {
     }
 
     ByteBuffer outputData = report.getIOObserver().getOutputData();
+    ByteBuffer inputData = report.getIOObserver().getInputData();
     System.out.println("Sent frames: " + outputData);
-    try {
-      TLSPlaintext plaintext = TLSDecoder.decode(outputData);
-      System.out.println(plaintext);
-    } catch (InvalidValue invalidValue) {
-      invalidValue.printStackTrace();
+    while (true) {
+      try {
+        TLSPlaintext plaintext = TLSDecoder.decode(outputData);
+        switch (plaintext.getContentType()) {
+          case Handshake:
+            TLSDecoder.decodeHandshake(plaintext.getPayload());
+            break;
+        }
+        System.out.printf("send: %s\n", TLSDecoder.decode(outputData));
+      } catch (InvalidValue invalidValue) {
+        invalidValue.printStackTrace();
+      } catch (BufferUnderflowException e) {
+        break;
+      }
     }
 
-    ByteBuffer inputData = report.getIOObserver().getInputData();
-    System.out.println("Receive frames: " + inputData);
-    try {
-      TLSPlaintext plaintext = TLSDecoder.decode(inputData);
-      System.out.println(plaintext);
-    } catch (InvalidValue invalidValue) {
-      invalidValue.printStackTrace();
+    while (true) {
+      try {
+        TLSPlaintext plaintext = TLSDecoder.decode(inputData);
+        System.out.printf("recv: %s\n", plaintext);
+        switch (plaintext.getContentType()) {
+          case Handshake:
+            TLSHandshake handshake = TLSDecoder.decodeHandshake(plaintext.getPayload());
+            System.out.println(handshake);
+            break;
+        }
+      } catch (InvalidValue invalidValue) {
+        invalidValue.printStackTrace();
+      } catch (BufferUnderflowException e) {
+        break;
+      }
     }
   }
 

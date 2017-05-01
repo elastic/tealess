@@ -19,7 +19,7 @@
 
 package co.elastic.tealess;
 
-import co.elastic.tealess.tls.IOObserver;
+import co.elastic.tealess.io.IOObserver;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;

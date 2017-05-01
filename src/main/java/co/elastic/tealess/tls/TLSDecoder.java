@@ -10,4 +10,8 @@ public class TLSDecoder {
     // Per RFC 5246, the top level record is TLSPlaintext.
     return TLSPlaintext.parse(buffer);
   }
+
+  public static TLSHandshake decodeHandshake(ByteBuffer buffer) throws InvalidValue {
+    return TLSHandshake.parse(buffer);
+  }
 }
