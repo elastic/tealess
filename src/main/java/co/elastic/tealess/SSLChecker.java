@@ -20,8 +20,7 @@
 package co.elastic.tealess;
 
 import co.elastic.Blame;
-import co.elastic.Resolver;
-import co.elastic.tealess.tls.IOObserver;
+import co.elastic.tealess.io.IOObserver;
 import co.elastic.tealess.tls.ObservingSSLEngine;
 import org.apache.http.conn.ssl.DefaultHostnameVerifier;
 import org.apache.logging.log4j.LogManager;
@@ -197,7 +196,6 @@ public class SSLChecker {
                 e.printStackTrace();
               }
             }
-            System.out.println("Read " + peerWire.position() + " bytes");
             peerWire.flip();
             result = sslEngine.unwrap(peerWire, peerText);
             state = result.getHandshakeStatus();

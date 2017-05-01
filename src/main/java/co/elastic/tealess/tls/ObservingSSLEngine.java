@@ -1,5 +1,7 @@
 package co.elastic.tealess.tls;
 
+import co.elastic.tealess.io.IOObserver;
+
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLException;
@@ -20,17 +22,12 @@ public class ObservingSSLEngine {
 
   public SSLEngineResult wrap(ByteBuffer src, ByteBuffer dst) throws SSLException {
     SSLEngineResult result = sslEngine.wrap(src, dst);
-
-    // Duplicate + Flip the dst buffer because it's being used as a writer, and we want to read.
-    ByteBuffer dup = dst.duplicate();
-    dup.flip();
-    observer.networkWrite(dup);
-
+    observer.networkWrite(dst);
     return result;
   }
 
   public SSLEngineResult unwrap(ByteBuffer src, ByteBuffer dst) throws SSLException {
-    //observer.networkRead(src);
+    observer.networkRead(src);
     SSLEngineResult result = sslEngine.unwrap(src, dst);
     return result;
   }
