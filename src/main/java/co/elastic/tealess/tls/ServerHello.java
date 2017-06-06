@@ -7,11 +7,11 @@ public class ServerHello extends TLSHandshake {
   private final Version version;
   private final Random random;
   private final byte[] session;
-  private final int cipherSuite;
+  private final CipherSuite cipherSuite;
   private final byte compressionMethod;
   private final byte[] extensionData;
 
-  public ServerHello(Version version, Random random, byte[] session, int cipherSuite, byte compressionMethod, byte[] extensionData) {
+  public ServerHello(Version version, Random random, byte[] session, CipherSuite cipherSuite, byte compressionMethod, byte[] extensionData) {
     super();
     this.version = version;
     this.random = random;
@@ -22,6 +22,6 @@ public class ServerHello extends TLSHandshake {
   }
 
   public String toString() {
-    return String.format("ServerHello[%s]", version);
+    return String.format("ServerHello[%s, %s, keyex %s]", version, cipherSuite, cipherSuite.keyExchange());
   }
 }

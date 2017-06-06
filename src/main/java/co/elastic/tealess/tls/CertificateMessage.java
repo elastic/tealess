@@ -13,4 +13,8 @@ public class CertificateMessage extends TLSHandshake {
     super();
     this.chain = chain;
   }
+
+  public String toString() {
+    return String.format("%s[%d certificates]", getClass().getSimpleName(), chain.size());
+  }
 }

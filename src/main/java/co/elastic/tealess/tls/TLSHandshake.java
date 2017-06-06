@@ -1,23 +1,23 @@
 package co.elastic.tealess.tls;
 
 import co.elastic.tealess.io.BufferUtil;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.ByteArrayInputStream;
 import java.nio.ByteBuffer;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 
-/**
- * Created by jls on 4/30/2017.
- */
 public class TLSHandshake {
+  private static final Logger logger = LogManager.getLogger();
+
   public static TLSHandshake parse(ByteBuffer buffer) throws InvalidValue {
     //byte[] x = new byte[100]; buffer.mark(); buffer.get(x); buffer.reset(); for (byte b : x) { System.out.printf("%02x ", b); }; System.out.println();
     HandshakeType handshakeType = HandshakeType.forValue(buffer.get());
@@ -34,27 +34,48 @@ public class TLSHandshake {
         return parseCertificate(buffer, length);
       case CertificateRequest:
         return parseCertificateRequest(buffer, length);
-      case HelloRequest:
-        //return parseHelloRequest(buffer, length);
-      case ServerKeyExchange:
-        //return parseServerKeyExchange(buffer, length);
       case ServerHelloDone:
-        //return parseServerHelloDone(buffer, length);
+        return parseServerHelloDone(buffer, length);
+      case ServerKeyExchange:
+        return parseServerKeyExchange(buffer, length);
+      case HelloRequest:
+        return parseHelloRequest(buffer, length);
+      case ClientKeyExchange:
+        return parseClientKeyExchange(buffer, length);
       case CertificateVerify:
         //return parseCertificateVerify(buffer, length);
-      case ClientKeyExchange:
-        //return parseClientKeyExchange(buffer, length);
       case Finished:
         //return parseFinished(buffer, length);
       default:
-        System.out.println("Parsing not implemented for " + handshakeType);
+        logger.warn("Parsing not implemented for " + handshakeType);
         return null;
     }
 
   }
 
+  private static TLSHandshake parseClientKeyExchange(ByteBuffer buffer, int length) {
+    System.out.println("ClientKeyExchange -- ");
+    byte[] x = new byte[buffer.limit() - buffer.position()]; buffer.mark(); buffer.get(x); buffer.reset(); for (byte b : x) { System.out.printf("%02x ", b); }; System.out.println();
+    System.out.println();
+    byte[] kex = new byte[length];
+    buffer.get(kex);
+    return new ClientKeyExchange(kex);
+  }
+
+  private static TLSHandshake parseHelloRequest(ByteBuffer buffer, int length) {
+    return new HelloRequest();
+  }
+
+  private static TLSHandshake parseServerKeyExchange(ByteBuffer buffer, int length) {
+    return new ServerKeyExchange();
+  }
+
+  private static TLSHandshake parseServerHelloDone(ByteBuffer buffer, int length) {
+    // This message has nothing in it.
+    return new ServerHelloDone();
+  }
+
   private static TLSHandshake parseCertificateRequest(ByteBuffer buffer, int length) {
-    //byte[] x = new byte[length]; buffer.mark(); buffer.get(x); buffer.reset(); for (byte b : x) { System.out.printf("%02x ", b); }; System.out.println();
 
     int typesLength = BufferUtil.readUInt8(buffer);
     List<ClientCertificateType> certificateTypes = new LinkedList<>();
@@ -95,7 +116,6 @@ public class TLSHandshake {
 
     int certificatesLength = BufferUtil.readUInt24(buffer);
 
-    System.out.printf("Certificates entries length: %d\n", certificatesLength);
     while (certificatesLength > 0) {
       //       struct {
       //         ASN.1Cert certificate_list<0..2^24-1>;
@@ -119,9 +139,15 @@ public class TLSHandshake {
     Version version = new Version(buffer.get(), buffer.get());
     Random random = Random.parse(buffer);
     byte[] session = getSessionID(buffer);
-    //System.out.printf("SessionID(%d, ...)\n", session.length);
 
-    int cipherSuite = BufferUtil.readUInt16(buffer);
+    CipherSuite cipherSuite;
+    try {
+      cipherSuite = CipherSuite.forValue(buffer.get(), buffer.get());
+    } catch (InvalidValue invalidValue) {
+      invalidValue.printStackTrace();
+      return null;
+    }
+
     byte compressionMethod = buffer.get();
 
     byte[] extensionData = getExtensions(buffer);
@@ -136,18 +162,24 @@ public class TLSHandshake {
     Random random = Random.parse(buffer);
 
     byte[] session = getSessionID(buffer);
-    //System.out.printf("SessionID(%d, ...)\n", session.length);
 
     int cipherSuitesLength = BufferUtil.readUInt16(buffer);
     int numCipherSuites = cipherSuitesLength / 2; // 2 bytes per cipher suite
-    // XXX: Parse the cipher suites list.
-    List<Short> cipherSuites = IntStream.range(0, cipherSuitesLength).boxed().map(i -> (short) BufferUtil.readUInt16(buffer)).collect(Collectors.toList());
-    //System.out.printf("Cipher Suites(%d, %s)\n", cipherSuitesLength, cipherSuites);
+    List<CipherSuite> cipherSuites = new LinkedList<>();
+    // XXX: Parse the cipher suites list.)
+    for (int i = 0; i < numCipherSuites; i++) {
+      try {
+        CipherSuite cipherSuite = CipherSuite.forValue(buffer.get(), buffer.get());
+        cipherSuites.add(cipherSuite);
+      } catch (InvalidValue invalidValue) {
+        invalidValue.printStackTrace();
+        return null;
+      }
+    }
 
     int compressionMethodsLength = BufferUtil.readUInt8(buffer);
     // XXX: Parse the compression methods list
     List<Byte> compressionMethods = IntStream.range(0, compressionMethodsLength).boxed().map(i -> buffer.get()).collect(Collectors.toList());
-    //System.out.printf("Compression methods: %s\n", compressionMethods);
 
     byte[] extensionData = getExtensions(buffer);
 
@@ -176,5 +208,9 @@ public class TLSHandshake {
     // XXX: Parse the extension data
     buffer.get(extensionData);
     return extensionData;
+  }
+
+  public String toString() {
+    return getClass().getSimpleName();
   }
 }

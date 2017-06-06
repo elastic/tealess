@@ -16,6 +16,6 @@ public class CertificateRequestMessage extends TLSHandshake {
   }
 
   public String toString() {
-    return String.format("%s(certificate types: %s)", getClass().getName(), clientCertificateTypes);
+    return String.format("%s(certificate types: %s)", getClass().getSimpleName(), clientCertificateTypes);
   }
 }

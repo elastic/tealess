@@ -27,8 +27,14 @@ public class ObservingSSLEngine {
   }
 
   public SSLEngineResult unwrap(ByteBuffer src, ByteBuffer dst) throws SSLException {
-    observer.networkRead(src);
     SSLEngineResult result = sslEngine.unwrap(src, dst);
+
+    // Only observe what was actually unwrapped from the source buffer.
+    ByteBuffer dup = src.duplicate();
+    dup.position(0);
+    dup.limit(src.position());
+    observer.networkRead(dup);
+
     return result;
   }
 
