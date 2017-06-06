@@ -61,6 +61,7 @@ public class SSLContextBuilder {
     }
 
     if (trustStore != null) {
+      System.out.println("Using custom trust store with " + trustStore.size());
       TrustManagerFactory tmf;
       tmf = TrustManagerFactory.getInstance(trustManagerAlgorithm);
       tmf.init(trustStore);

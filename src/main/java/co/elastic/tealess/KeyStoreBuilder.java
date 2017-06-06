@@ -57,11 +57,18 @@ public class KeyStoreBuilder {
   // (requires a passphrase, even when loading null).
   private final char[] IN_MEMORY_KEYSTORE_PASSPHRASE = "hurray".toCharArray();
 
-  public KeyStoreBuilder() throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException {
+  public KeyStoreBuilder() throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException, UnrecoverableKeyException {
+    keyManagerFactory = KeyManagerFactory.getInstance(keyManagerAlgorithm);
+    empty();
+    modified = false;
+  }
+
+  public void empty() throws CertificateException, NoSuchAlgorithmException, IOException, KeyStoreException, UnrecoverableKeyException {
     keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
     // default to an empty KeyStore instance.
     keyStore.load(null, IN_MEMORY_KEYSTORE_PASSPHRASE);
-    keyManagerFactory = KeyManagerFactory.getInstance(keyManagerAlgorithm);
+    keyManagerFactory.init(keyStore, IN_MEMORY_KEYSTORE_PASSPHRASE);
+    modified = true;
   }
 
   void useDefaultTrustStore() throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException {
