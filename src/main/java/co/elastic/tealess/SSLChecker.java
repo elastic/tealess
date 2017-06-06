@@ -20,8 +20,7 @@
 package co.elastic.tealess;
 
 import co.elastic.Blame;
-import co.elastic.tealess.io.IOObserver;
-import co.elastic.tealess.tls.ObservingSSLEngine;
+import co.elastic.Resolver;
 import org.apache.http.conn.ssl.DefaultHostnameVerifier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -30,11 +29,12 @@ import javax.net.ssl.*;
 import java.io.IOException;
 import java.net.*;
 import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.security.*;
 import java.security.cert.X509Certificate;
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.FINISHED;
 
@@ -47,8 +47,8 @@ public class SSLChecker {
    * 5) Hostname verification (RFC6125?)
    */
 
-  private static final long defaultTimeout = 1000;
-  private final Logger logger = LogManager.getLogger();
+  private static final int defaultTimeout = 1000;
+  private static final Logger logger = LogManager.getLogger();
   private SSLContext ctx;
   private SSLContextBuilder ctxbuilder;
 
@@ -64,11 +64,31 @@ public class SSLChecker {
     peerCertificateDetails = new PeerCertificateDetails(chain, authType, exception);
   }
 
+  public List<SSLReport> checkAll(InetSocketAddress address) throws ConfigurationProblem {
+    final String hostname = address.getHostString();
+    final Collection<InetAddress> addresses = getAddresses(address);
+    return addresses.stream()
+      .map(a -> check(new InetSocketAddress(a, address.getPort()), hostname))
+      .collect(Collectors.toList());
+  }
+
+  private static Collection<InetAddress> getAddresses(InetSocketAddress address) throws ConfigurationProblem {
+    final String hostname = address.getHostString();
+
+    final Collection<InetAddress> addresses;
+    logger.trace("Doing name resolution on {}", hostname);
+    try {
+      return Resolver.SystemResolver.resolve(hostname);
+    } catch (UnknownHostException e) {
+      throw new ConfigurationProblem("Unknown host", e);
+    }
+  }
+
   public SSLReport check(InetSocketAddress address, String name) {
     return check(address, name, defaultTimeout);
   }
 
-  private SSLReport check(InetSocketAddress address, String name, long timeout) {
+  private SSLReport check(InetSocketAddress address, String name, int timeout) {
     SSLReport sslReport = new SSLReport();
     sslReport.setSSLContextBuilder(ctxbuilder);
     sslReport.setSSLContext(ctx);
@@ -77,16 +97,8 @@ public class SSLChecker {
     sslReport.setTimeout(timeout);
 
     logger.debug("Trying {} (expected hostname {})", address, name);
-    SocketChannel socket;
-    try {
-      socket = SocketChannel.open();
-      socket.configureBlocking(false);
-    } catch (IOException e) {
-      sslReport.setFailed(e);
-      return sslReport;
-    }
 
-
+    Socket socket = new Socket();
     checkConnect(sslReport, socket, timeout);
     if (sslReport.getException() != null) {
       return sslReport;
@@ -106,25 +118,11 @@ public class SSLChecker {
     sslReport.setHostnameVerified(hv.verify(sslReport.getHostname(), sslReport.getSSLSession()));
   }
 
-  private void checkConnect(SSLReport sslReport, SocketChannel socket, long timeout) {
+  private void checkConnect(SSLReport sslReport, Socket socket, int timeout) {
     final InetSocketAddress address = sslReport.getAddress();
     try {
       logger.trace("Connecting to {}", address);
-      Selector selector = Selector.open();
-      SelectionKey sk = socket.register(selector, SelectionKey.OP_CONNECT);
-      socket.connect(address);
-      selector.select(timeout);
-      if (!sk.isConnectable()) {
-        sslReport.setFailed(new SocketTimeoutException());
-        return;
-      }
-      if (socket.isConnectionPending()) {
-        socket.finishConnect();
-      }
-    } catch (ConnectException e) {
-      logger.debug("Connection failed to {}: {}", address, e);
-      sslReport.setFailed(e);
-      return;
+      socket.connect(address, timeout);
     } catch (IOException e) {
       logger.error("Failed connecting to {}: {}", address, e);
       sslReport.setFailed(e);
@@ -134,12 +132,47 @@ public class SSLChecker {
     logger.debug("Connection successful to {}", address);
   }
 
-  private void checkHandshake(SSLReport sslReport, SocketChannel socket) {
+  private void checkHandshake(SSLReport sslReport, Socket socket) {
     final InetSocketAddress address = sslReport.getAddress();
     final String name = sslReport.getHostname();
-    IOObserver ioObserver = new IOObserver();
-    ObservingSSLEngine sslEngine = new ObservingSSLEngine(ctx.createSSLEngine(name, address.getPort()), ioObserver);
-    sslReport.setIOObserver(ioObserver);
+    SSLSocketFactory socketFactory = ctx.getSocketFactory();
+
+    final SSLSocket sslSocket;
+    try {
+      socket.setSoTimeout(1000);
+      sslSocket = (SSLSocket) socketFactory.createSocket(socket, name, sslReport.getAddress().getPort(), true);
+      sslSocket.addHandshakeCompletedListener(e -> logger.debug("Handshake completed: {}", e));
+    } catch (IOException e) {
+      sslReport.setFailed(e);
+      Throwable cause = Blame.get(e);
+      logger.warn("beginHandshake failed: [{}] {}", cause.getClass(), cause.getMessage());
+      return;
+    }
+
+    sslReport.setSSLSession(sslSocket.getSession());
+    sslReport.setPeerCertificateDetails(peerCertificateDetails);
+    if (peerCertificateDetails != null && peerCertificateDetails.getException() != null) {
+      sslReport.setFailed(peerCertificateDetails.getException());
+    }
+
+    try {
+      socket.close();
+    } catch (IOException e) {
+      sslReport.setFailed(e);
+      Throwable cause = Blame.get(e);
+      logger.warn("SSLSocket.close() failed: {} {}", cause.getClass(), cause.getMessage());
+    }
+  }
+
+
+
+  private void _checkHandshake(SSLReport sslReport, SocketChannel socket) {
+    final InetSocketAddress address = sslReport.getAddress();
+    final String name = sslReport.getHostname();
+    //IOObserver ioObserver = new IOObserver();
+    //ObservingSSLEngine sslEngine = new ObservingSSLEngine(ctx.createSSLEngine(name, address.getPort()), ioObserver);
+    //sslReport.setIOObserver(ioObserver);
+    SSLEngine sslEngine = ctx.createSSLEngine(name, address.getPort());
     sslEngine.setUseClientMode(true);
 
     try {
@@ -179,15 +212,15 @@ public class SSLChecker {
             result = sslEngine.wrap(localText, localWire);
             state = result.getHandshakeStatus();
             localWire.flip();
+            logger.trace("Wire send {}", localWire);
             while (localWire.hasRemaining()) {
               socket.write(localWire);
-              //logger.trace("Sent {} bytes [{}]", bytes, address);
             }
             localWire.compact();
             break;
           case NEED_UNWRAP:
             // Try reading until we get data.
-            Selector selector = Selector.open();
+            logger.trace("Wire before read {}", peerWire);
             while (peerWire.position() == 0) {
               socket.read(peerWire);
               try {
@@ -196,8 +229,10 @@ public class SSLChecker {
                 e.printStackTrace();
               }
             }
+            logger.trace("Wire read {}", peerWire);
             peerWire.flip();
             result = sslEngine.unwrap(peerWire, peerText);
+            logger.trace("Wire read after unwrap {}", peerWire);
             state = result.getHandshakeStatus();
             peerWire.compact();
             break;

@@ -1,17 +1,23 @@
 package co.elastic.tealess.io;
 
 import co.elastic.tealess.io.BufferUtil;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Created by jls on 4/13/2017.
  */
 public class IOObserver {
-  // XXX: Add transaction with time as counter so we can replay things.
+  private static final Logger logger = LogManager.getLogger();
+
+  private List<IOLog> ioLogs = new LinkedList<>();
 
   private ByteArrayOutputStream networkIn = new ByteArrayOutputStream();
   private ByteArrayOutputStream networkOut = new ByteArrayOutputStream();
@@ -29,7 +35,8 @@ public class IOObserver {
 
   public void networkRead(ByteBuffer buffer) {
     writeSilent(buffer.duplicate(), networkIn);
-    System.out.printf("networkRead(" + buffer + ") now %s\n", networkIn.size());
+    ioLogs.add(IOLog.newRead(buffer.duplicate()));
+    logger.trace("networkRead({}) now {}", buffer, networkIn.size());
   }
 
   public ByteBuffer getInputData() {
@@ -39,12 +46,16 @@ public class IOObserver {
   public void networkWrite(ByteBuffer buffer) {
     ByteBuffer dup = buffer.duplicate();
     dup.flip();
+    ioLogs.add(IOLog.newWrite(dup.duplicate()));
     writeSilent(dup, networkOut);
-    System.out.printf("networkWrite(" + dup + ") now %s\n", networkOut.size());
+    logger.trace("networkWrite({}) now {}", dup, networkOut.size());
   }
 
   public ByteBuffer getOutputData() {
     return ByteBuffer.wrap(networkOut.toByteArray());
   }
 
+  public List<IOLog> getLog() {
+    return ioLogs;
+  }
 }

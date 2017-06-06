@@ -19,10 +19,7 @@
 
 package co.elastic.tealess;
 
-import co.elastic.tealess.cli.BeatsCommand;
-import co.elastic.tealess.cli.Command;
-import co.elastic.tealess.cli.ConnectCommand;
-import co.elastic.tealess.cli.EnvironmentCommand;
+import co.elastic.tealess.cli.*;
 import co.elastic.tealess.cli.input.ParserResult;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -55,6 +52,9 @@ public class Main {
         break;
       case "beats":
         command = new BeatsCommand();
+        break;
+      case "trust":
+        command = new TrustCommand();
         break;
       default:
         System.out.printf("Unknown command: '%s'\n", commandName);

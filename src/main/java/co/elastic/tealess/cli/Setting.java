@@ -106,7 +106,11 @@ public class Setting<T> {
   }
 
   public T getValue() {
-    return value;
+    if (value != null) {
+      return value;
+    } else {
+      return getDefaultValue();
+    }
   }
 
   public Setting<T> asArgument(int i) {

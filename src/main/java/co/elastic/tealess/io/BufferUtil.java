@@ -10,7 +10,6 @@ import java.nio.ByteBuffer;
 public class BufferUtil {
   // XXX: Keep timestamp of when each write occurs?
   public static void write(ByteBuffer source, OutputStream destination) throws IOException {
-    System.err.println(source);
     int length = source.limit() - source.position();
     if (length == 0) {
       return;

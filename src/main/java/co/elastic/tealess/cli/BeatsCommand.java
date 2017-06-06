@@ -83,7 +83,7 @@ public class BeatsCommand implements Command {
     try {
       keys = new KeyStoreBuilder();
       trust = new KeyStoreBuilder();
-    } catch (IOException | CertificateException | KeyStoreException | NoSuchAlgorithmException e) {
+    } catch (IOException | CertificateException | KeyStoreException | NoSuchAlgorithmException | UnrecoverableKeyException e) {
       throw new Bug("'new KeyStoreBuilder' failed", e);
     }
 

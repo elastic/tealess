@@ -20,7 +20,9 @@
 package co.elastic.tealess;
 
 import co.elastic.Blame;
+import co.elastic.tealess.io.IOLog;
 import co.elastic.tealess.tls.*;
+import org.omg.CORBA.DynAnyPackage.Invalid;
 
 import javax.net.ssl.SSLParameters;
 import java.io.IOException;
@@ -59,7 +61,8 @@ public class SSLReportAnalyzer {
       }
 
       analyze(blame, failures.get(0));
-      failures.get(0).getException().printStackTrace();
+
+      //failures.get(0).getException().printStackTrace();
     }
   }
 
@@ -92,34 +95,69 @@ public class SSLReportAnalyzer {
       System.out.println("  -- No data was transmitted.. this is probably a bug in this tool.");
       return;
     }
-
-    ByteBuffer outputData = report.getIOObserver().getOutputData();
+    List<IOLog> logs = report.getIOObserver().getLog();
     ByteBuffer inputData = report.getIOObserver().getInputData();
-    System.out.println("Sent frames: " + outputData);
-    while (true) {
-      try {
-        TLSPlaintext plaintext = TLSDecoder.decode(outputData);
-        switch (plaintext.getContentType()) {
-          case Handshake:
-            TLSDecoder.decodeHandshake(plaintext.getPayload());
-            break;
+    ByteBuffer outputData = report.getIOObserver().getOutputData();
+    for (IOLog entry : logs) {
+      int length = entry.getBuffer().limit();
+      ByteBuffer buffer = null;
+      switch (entry.getOperation()) {
+        case Read:
+          buffer = inputData;
+          break;
+        case Write:
+          buffer = outputData;
+          break;
+      }
+
+      while (length > 0) {
+        TLSPlaintext plaintext;
+
+        try {
+          plaintext = TLSPlaintext.parse(buffer);
+        } catch (InvalidValue e) {
+          e.printStackTrace();
+          return;
         }
-        System.out.printf("send: %s\n", TLSDecoder.decode(outputData));
-      } catch (InvalidValue invalidValue) {
-        invalidValue.printStackTrace();
-      } catch (BufferUnderflowException e) {
-        break;
+
+        ByteBuffer dup = plaintext.getPayload();
+        System.out.println();
+        System.out.printf("=> Buffer: %s\n", dup);
+        byte[] x = new byte[dup.limit() - dup.position()]; dup.mark(); dup.get(x); dup.reset(); for (byte b : x) { System.out.printf("%02x ", b); }; System.out.println();
+
+        length -= plaintext.getPayload().limit() + 4;
+        try {
+          switch (plaintext.getContentType()) {
+            case Handshake:
+              TLSHandshake handshake = TLSDecoder.decodeHandshake(plaintext.getPayload());
+              System.out.printf(":: %s: %s\n", entry.getOperation(), handshake);
+              System.out.printf(":: remaining %s\n", plaintext.getPayload());
+              ByteBuffer dup2 = plaintext.getPayload();
+              System.out.println();
+              System.out.printf("=> Buffer After: %s\n", dup2);
+              x = new byte[dup2.limit() - dup2.position()]; dup2.mark(); dup2.get(x); dup2.reset(); for (byte b : x) { System.out.printf("%02x ", b); }; System.out.println();
+              break;
+            default:
+              System.out.printf(":: %s: %s\n", entry.getOperation(), plaintext.getPayload());
+              break;
+          }
+        } catch (InvalidValue invalidValue) {
+          invalidValue.printStackTrace();
+        } catch (BufferUnderflowException e) {
+          break;
+        }
       }
     }
 
+
+    ServerHello serverHello = null;
     while (true) {
       try {
         TLSPlaintext plaintext = TLSDecoder.decode(inputData);
-        System.out.printf("recv: %s\n", plaintext);
         switch (plaintext.getContentType()) {
           case Handshake:
             TLSHandshake handshake = TLSDecoder.decodeHandshake(plaintext.getPayload());
-            System.out.println(handshake);
+            System.out.println("recv: " + handshake);
             break;
         }
       } catch (InvalidValue invalidValue) {

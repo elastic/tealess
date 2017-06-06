@@ -19,13 +19,21 @@
 
 package co.elastic.tealess;
 
+import co.elastic.Resolver;
 import co.elastic.tealess.io.IOObserver;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.Collection;
+import java.util.List;
 
 public class SSLReport {
+  private static final Logger logger = LogManager.getLogger();
+
   private Throwable exception;
   private IOObserver ioObserver;
   private SSLContext sslContext;

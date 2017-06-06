@@ -69,7 +69,7 @@ public class ConnectCommand implements Command {
     try {
       keys = new KeyStoreBuilder();
       trust = new KeyStoreBuilder();
-    } catch (IOException | CertificateException | KeyStoreException | NoSuchAlgorithmException e) {
+    } catch (IOException | CertificateException | KeyStoreException | NoSuchAlgorithmException | UnrecoverableKeyException e) {
       throw new Bug("'new KeyStoreBuilder' failed", e);
     }
   }
@@ -110,6 +110,12 @@ public class ConnectCommand implements Command {
         keys.useKeyStore(keyStore.getValue().toFile());
       } catch (IOException | KeyStoreException | UnrecoverableKeyException | CertificateException | NoSuchAlgorithmException e) {
         return ParserResult.error("Failed trying to use keystore " + keyStore, e);
+      }
+    }  else {
+      try {
+        keys.empty();
+      } catch (CertificateException | NoSuchAlgorithmException | KeyStoreException | IOException | UnrecoverableKeyException e) {
+        return ParserResult.error("Failed creating empty key store", e);
       }
     }
 

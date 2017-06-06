@@ -19,11 +19,15 @@
 
 package co.elastic.tealess;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import javax.net.ssl.X509TrustManager;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
 class TrackingTrustManager implements X509TrustManager {
+  private static final Logger logger = LogManager.getLogger();
   private final X509TrustManager tm;
   private SSLContextBuilder.SSLCertificateVerificationTracker tracker;
 
@@ -36,9 +40,11 @@ class TrackingTrustManager implements X509TrustManager {
   }
 
   public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+    logger.trace("checkServerTrusted: {} @ {}", chain[0].getSubjectAlternativeNames(), authType);
     try {
       tm.checkServerTrusted(chain, authType);
     } catch (CertificateException e) {
+      logger.trace("Server trust check failed: {}", e.getMessage());
       if (tracker != null) {
         this.tracker.track(chain, authType, e);
       }
@@ -64,6 +70,7 @@ class TrackingTrustManager implements X509TrustManager {
   }
 
   public X509Certificate[] getAcceptedIssuers() {
+    logger.trace("getAcceptedIssuers");
     return tm.getAcceptedIssuers();
   }
 }
