@@ -149,6 +149,8 @@ public class SSLChecker {
       return;
     }
 
+    // Calling getSession here will implicitly attempt to complete the TLS handshake
+    // if it is not already done.
     sslReport.setSSLSession(sslSocket.getSession());
     sslReport.setPeerCertificateDetails(peerCertificateDetails);
     if (peerCertificateDetails != null && peerCertificateDetails.getException() != null) {
@@ -162,93 +164,5 @@ public class SSLChecker {
       Throwable cause = Blame.get(e);
       logger.warn("SSLSocket.close() failed: {} {}", cause.getClass(), cause.getMessage());
     }
-  }
-
-
-
-  private void _checkHandshake(SSLReport sslReport, SocketChannel socket) {
-    final InetSocketAddress address = sslReport.getAddress();
-    final String name = sslReport.getHostname();
-    //IOObserver ioObserver = new IOObserver();
-    //ObservingSSLEngine sslEngine = new ObservingSSLEngine(ctx.createSSLEngine(name, address.getPort()), ioObserver);
-    //sslReport.setIOObserver(ioObserver);
-    SSLEngine sslEngine = ctx.createSSLEngine(name, address.getPort());
-    sslEngine.setUseClientMode(true);
-
-    try {
-      sslEngine.beginHandshake();
-    } catch (SSLException e) {
-      sslReport.setFailed(e);
-      Throwable cause = Blame.get(e);
-      logger.warn("beginHandshake failed: [{}] {}", cause.getClass(), cause.getMessage());
-    }
-
-    // TODO: Is this enough bytes?
-    int size = sslEngine.getSession().getApplicationBufferSize() * 2;
-    ByteBuffer localText = ByteBuffer.allocate(size);
-    ByteBuffer localWire = ByteBuffer.allocate(size);
-    ByteBuffer peerText = ByteBuffer.allocate(size);
-    ByteBuffer peerWire = ByteBuffer.allocate(size);
-
-    // TODO: I wonder... do we need to send any data at all?
-    localText.put("SSL TEST. HELLO.".getBytes());
-    localText.flip();
-
-    SSLEngineResult result;
-    logger.info("Starting SSL handshake [{}] ", address);
-    try {
-      SSLEngineResult.HandshakeStatus state;
-      state = sslEngine.getHandshakeStatus();
-      while (state != FINISHED) {
-        // XXX: Use a Selector to wait for data.
-        //logger.trace("State: {} [{}]", state, address);
-        switch (state) {
-          case NEED_TASK:
-            sslEngine.getDelegatedTask().run();
-            state = sslEngine.getHandshakeStatus();
-            break;
-          case NEED_WRAP:
-            localWire.clear();
-            result = sslEngine.wrap(localText, localWire);
-            state = result.getHandshakeStatus();
-            localWire.flip();
-            logger.trace("Wire send {}", localWire);
-            while (localWire.hasRemaining()) {
-              socket.write(localWire);
-            }
-            localWire.compact();
-            break;
-          case NEED_UNWRAP:
-            // Try reading until we get data.
-            logger.trace("Wire before read {}", peerWire);
-            while (peerWire.position() == 0) {
-              socket.read(peerWire);
-              try {
-                Thread.currentThread().sleep(5);
-              } catch (InterruptedException e) {
-                e.printStackTrace();
-              }
-            }
-            logger.trace("Wire read {}", peerWire);
-            peerWire.flip();
-            result = sslEngine.unwrap(peerWire, peerText);
-            logger.trace("Wire read after unwrap {}", peerWire);
-            state = result.getHandshakeStatus();
-            peerWire.compact();
-            break;
-        }
-      }
-    } catch (IOException e) {
-      sslReport.setFailed(e);
-      sslReport.setSSLSession(sslEngine.getHandshakeSession());
-      sslReport.setPeerCertificateDetails(peerCertificateDetails);
-      logger.warn("beginHandshake failed", e);
-      return;
-    }
-
-    logger.info("handshake completed [{}]", address);
-
-    // Handshake OK!
-    sslReport.setSSLSession(sslEngine.getSession());
   }
 }
