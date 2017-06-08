@@ -119,14 +119,14 @@ public class KeyStoreBuilder {
           logger.info("Ignoring non-file '{}'", file);
         }
       }
-    } else{
+    } else {
       addCAPath(path.toFile());
     }
   }
 
   void addCAPath(File file) throws CertificateException, IOException, KeyStoreException {
     for (Certificate cert : parseCertificatesPath(file.toPath())) {
-      logger.debug("Loaded certificate from {}: {}", file, ((X509Certificate)cert).getSubjectX500Principal());
+      logger.debug("Loaded certificate from {}: {}", file, ((X509Certificate) cert).getSubjectX500Principal());
       String alias = ((X509Certificate) cert).getSubjectX500Principal().toString();
       keyStore.setCertificateEntry(alias, cert);
     }

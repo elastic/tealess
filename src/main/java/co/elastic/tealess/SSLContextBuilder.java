@@ -56,8 +56,8 @@ public class SSLContextBuilder {
 
     if (keyManagerFactory != null) {
       kms = Arrays.stream(keyManagerFactory.getKeyManagers())
-              .map((km) -> new LoggingKeyManager((X509KeyManager) km))
-              .toArray(X509KeyManager[]::new);
+        .map((km) -> new LoggingKeyManager((X509KeyManager) km))
+        .toArray(X509KeyManager[]::new);
     }
 
     if (trustStore != null) {
@@ -67,12 +67,12 @@ public class SSLContextBuilder {
       tmf.init(trustStore);
       // Wrap java's TrustManagers in our own so that we can track verification failures.
       tms = Arrays.stream(tmf.getTrustManagers())
-              .map((tm) -> new TrackingTrustManager((X509TrustManager) tm))
-              .map((tm) -> {
-                tm.setTracker(tracker);
-                return tm;
-              })
-              .toArray(TrustManager[]::new);
+        .map((tm) -> new TrackingTrustManager((X509TrustManager) tm))
+        .map((tm) -> {
+          tm.setTracker(tracker);
+          return tm;
+        })
+        .toArray(TrustManager[]::new);
     }
 
     logger.trace("Building SSLContext with keys:{}, trusts:{}", kms, tms);

@@ -25,18 +25,23 @@ import org.apache.http.conn.ssl.DefaultHostnameVerifier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.net.ssl.*;
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 import java.io.IOException;
-import java.net.*;
-import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
-import java.security.*;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.UnknownHostException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.X509Certificate;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import static javax.net.ssl.SSLEngineResult.HandshakeStatus.FINISHED;
 
 public class SSLChecker {
   /* Diagnose SSL problems

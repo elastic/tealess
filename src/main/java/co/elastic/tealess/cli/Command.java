@@ -28,5 +28,6 @@ import co.elastic.tealess.cli.input.ParserResult;
  */
 public interface Command {
   ParserResult parse(String[] args);
+
   void run() throws ConfigurationProblem, Bug;
 }

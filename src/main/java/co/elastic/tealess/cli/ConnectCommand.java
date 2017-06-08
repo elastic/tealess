@@ -41,7 +41,10 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -58,11 +61,11 @@ public class ConnectCommand implements Command {
 
   private final Setting<Path> capath = parser.addNamed(new Setting<>("capath", "The path to a file containing one or more certificates to trust in PEM format.", PathInput.singleton));
   private final Setting<Path> trustStore = parser.addNamed(new Setting<>("truststore", "The path to a java keystore or pkcs12 file containing certificate authorities to trust", PathInput.singleton))
-          .setDefaultValue(KeyStoreBuilder.defaultTrustStorePath);
+    .setDefaultValue(KeyStoreBuilder.defaultTrustStorePath);
   private final Setting<Path> keyStore = parser.addNamed(new Setting<>("keystore", "The path to a java keystore or pkcs12 file containing private key(s) and client certificates to use when connecting to a remote server.", PathInput.singleton));
   private final Setting<Level> logLevel = parser.addNamed(new Setting<Level>("log-level", "The log level"))
-          .setDefaultValue(Level.INFO)
-          .parseWith(Level::valueOf);
+    .setDefaultValue(Level.INFO)
+    .parseWith(Level::valueOf);
   private final Setting<InetSocketAddress> address = parser.addPositional(new Setting<>("address", "The address in form of `host` or `host:port` to connect", new InetSocketAddressInput(443)));
 
   public ConnectCommand() throws Bug {
@@ -74,7 +77,7 @@ public class ConnectCommand implements Command {
     }
   }
 
- public ParserResult parse(String[] args) {
+  public ParserResult parse(String[] args) {
     parser.setDescription(DESCRIPTION);
     Iterator<String> argsi = Arrays.asList(args).iterator();
 
@@ -111,7 +114,7 @@ public class ConnectCommand implements Command {
       } catch (IOException | KeyStoreException | UnrecoverableKeyException | CertificateException | NoSuchAlgorithmException e) {
         return ParserResult.error("Failed trying to use keystore " + keyStore, e);
       }
-    }  else {
+    } else {
       try {
         keys.empty();
       } catch (CertificateException | NoSuchAlgorithmException | KeyStoreException | IOException | UnrecoverableKeyException e) {
@@ -155,8 +158,8 @@ public class ConnectCommand implements Command {
 
     System.out.printf("%s resolved to %d addresses\n", hostname, addresses.size());
     List<SSLReport> reports = addresses.stream()
-            .map(a -> checker.check(new InetSocketAddress(a, address.getValue().getPort()), hostname))
-            .collect(Collectors.toList());
+      .map(a -> checker.check(new InetSocketAddress(a, address.getValue().getPort()), hostname))
+      .collect(Collectors.toList());
 
     System.out.println();
 

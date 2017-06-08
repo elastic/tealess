@@ -21,8 +21,8 @@ package co.elastic;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Collection;
 import java.util.Arrays;
+import java.util.Collection;
 
 public interface Resolver {
   Collection<InetAddress> resolve(String name) throws UnknownHostException;

@@ -33,7 +33,6 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Created by jls on 1/20/17.
@@ -91,7 +90,7 @@ public class EnvironmentCommand implements Command {
     SSLEngine engine = getSSLEngine();
 
     showNettyDetails();
-    
+
     System.out.println();
 
     System.out.println("Supported protocols: ('+' means enabled by default) ");

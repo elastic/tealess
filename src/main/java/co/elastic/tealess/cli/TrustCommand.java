@@ -159,9 +159,9 @@ public class TrustCommand implements Command {
     if (Arrays.equals(passphrase, passphrase2)) {
       try (OutputStream out = new FileOutputStream(path.toFile())) {
         keyStore.store(out, passphrase);
-      } catch(IOException | KeyStoreException | CertificateException e){
+      } catch (IOException | KeyStoreException | CertificateException e) {
         throw new ConfigurationProblem("Failed to write keystore", e);
-      } catch(NoSuchAlgorithmException e){
+      } catch (NoSuchAlgorithmException e) {
         throw new Bug("Failed to write keystore " + path, e);
       }
     } else {
@@ -170,7 +170,7 @@ public class TrustCommand implements Command {
   }
 
   private static void writePEM(Path path, X509Certificate[] chain) throws ConfigurationProblem {
-    try(PrintStream out = new PrintStream(new FileOutputStream(path.toFile(), true))) {
+    try (PrintStream out = new PrintStream(new FileOutputStream(path.toFile(), true))) {
       writePEM(out, chain);
     } catch (FileNotFoundException e) {
       throw new ConfigurationProblem("Could not write to " + path + ": " + e);

@@ -21,8 +21,8 @@ public class TLSPlaintext {
 
     int length = buffer.getShort() & 0xffff;
     // RFC: The length MUST NOT exceed 2^14 bytes
-    assert(length <= 1<<14);
-    assert(length > 0);
+    assert (length <= 1 << 14);
+    assert (length > 0);
 
     ByteBuffer payload = buffer.duplicate();
     payload.limit(buffer.position() + length);

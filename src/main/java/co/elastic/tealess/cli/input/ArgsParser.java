@@ -53,6 +53,7 @@ public class ArgsParser {
   public ParserResult parse(String[] args) {
     return parse(Arrays.asList(args).iterator());
   }
+
   public ParserResult parse(Iterator<String> args) {
     String firstArgument;
     int argi = 0;
@@ -84,7 +85,7 @@ public class ArgsParser {
       }
     }
 
-    for (;args.hasNext(); argi++) {
+    for (; args.hasNext(); argi++) {
       String text = args.next();
       result = parseArgument(positionalSettings, argi, text);
       if (!result.getSuccess()) {

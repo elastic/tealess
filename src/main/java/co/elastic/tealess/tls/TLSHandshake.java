@@ -55,7 +55,15 @@ public class TLSHandshake {
 
   private static TLSHandshake parseClientKeyExchange(ByteBuffer buffer, int length) {
     System.out.println("ClientKeyExchange -- ");
-    byte[] x = new byte[buffer.limit() - buffer.position()]; buffer.mark(); buffer.get(x); buffer.reset(); for (byte b : x) { System.out.printf("%02x ", b); }; System.out.println();
+    byte[] x = new byte[buffer.limit() - buffer.position()];
+    buffer.mark();
+    buffer.get(x);
+    buffer.reset();
+    for (byte b : x) {
+      System.out.printf("%02x ", b);
+    }
+    ;
+    System.out.println();
     System.out.println();
     byte[] kex = new byte[length];
     buffer.get(kex);
@@ -82,7 +90,7 @@ public class TLSHandshake {
     for (int i = 0; i < typesLength; i++) {
       try {
         certificateTypes.add(ClientCertificateType.forValue(buffer.get()));
-        } catch (InvalidValue invalidValue) {
+      } catch (InvalidValue invalidValue) {
         invalidValue.printStackTrace();
         return null;
       }

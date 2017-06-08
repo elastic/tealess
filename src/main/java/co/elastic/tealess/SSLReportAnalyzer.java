@@ -22,13 +22,11 @@ package co.elastic.tealess;
 import co.elastic.Blame;
 import co.elastic.tealess.io.IOLog;
 import co.elastic.tealess.tls.*;
-import org.omg.CORBA.DynAnyPackage.Invalid;
 
 import javax.net.ssl.SSLParameters;
 import java.io.IOException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
 import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
@@ -71,7 +69,7 @@ public class SSLReportAnalyzer {
   public static void analyze(Class<? extends Throwable> blame, SSLReport report) {
     // I use Class.getCanonicalName() here to avoid a compiler warning that sun.security internal API.
     if (blame.getCanonicalName().equals("sun.security.provider.certpath.SunCertPathBuilderException")
-            || blame == java.security.cert.CertPathValidatorException.class) {
+      || blame == java.security.cert.CertPathValidatorException.class) {
       analyzeCertificatePathProblem(report);
     } else if (blame == java.io.EOFException.class) {
       analyzeEarlyEOF(report);
@@ -123,7 +121,15 @@ public class SSLReportAnalyzer {
         ByteBuffer dup = plaintext.getPayload();
         System.out.println();
         System.out.printf("=> Buffer: %s\n", dup);
-        byte[] x = new byte[dup.limit() - dup.position()]; dup.mark(); dup.get(x); dup.reset(); for (byte b : x) { System.out.printf("%02x ", b); }; System.out.println();
+        byte[] x = new byte[dup.limit() - dup.position()];
+        dup.mark();
+        dup.get(x);
+        dup.reset();
+        for (byte b : x) {
+          System.out.printf("%02x ", b);
+        }
+        ;
+        System.out.println();
 
         length -= plaintext.getPayload().limit() + 4;
         try {
@@ -135,7 +141,15 @@ public class SSLReportAnalyzer {
               ByteBuffer dup2 = plaintext.getPayload();
               System.out.println();
               System.out.printf("=> Buffer After: %s\n", dup2);
-              x = new byte[dup2.limit() - dup2.position()]; dup2.mark(); dup2.get(x); dup2.reset(); for (byte b : x) { System.out.printf("%02x ", b); }; System.out.println();
+              x = new byte[dup2.limit() - dup2.position()];
+              dup2.mark();
+              dup2.get(x);
+              dup2.reset();
+              for (byte b : x) {
+                System.out.printf("%02x ", b);
+              }
+              ;
+              System.out.println();
               break;
             default:
               System.out.printf(":: %s: %s\n", entry.getOperation(), plaintext.getPayload());
@@ -214,7 +228,7 @@ public class SSLReportAnalyzer {
       System.out.println();
       System.out.println("The last certificate in the chain provided by the server is missing a trust anchor.");
       System.out.println("A trust anchor is what you would normally provide in a certificate authorities file " +
-              "that tells the program about SSL certificate authorities that are to be trusted when doing SSL/TLS handshakes.");
+        "that tells the program about SSL certificate authorities that are to be trusted when doing SSL/TLS handshakes.");
       System.out.println();
 
       int trustCount = 0;

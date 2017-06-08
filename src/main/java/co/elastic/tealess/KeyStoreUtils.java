@@ -19,17 +19,15 @@
 
 package co.elastic.tealess;
 
-import co.elastic.Bug;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.*;
-import java.security.cert.Certificate;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Base64;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -44,7 +42,7 @@ class KeyStoreUtils {
 
     // Look for the key entry
     boolean foundStart = false;
-      for (String line : lines) {
+    for (String line : lines) {
       if (!foundStart) {
         if (line.equals(RSA_PEM_HEADER)) {
           foundStart = true;

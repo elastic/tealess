@@ -40,7 +40,7 @@ public class BeatsCommand implements Command {
   private final Setting<Path> settingsPath = parser.addPositional(new Setting<>("settings", "The path to the beats yaml", PathInput.singleton));
 
   // Beats output configuration sections to analyze.
-  private final String[] outputs = { "logstash", "elasticsearch", "redis", "kafka" };
+  private final String[] outputs = {"logstash", "elasticsearch", "redis", "kafka"};
 
   @Override
   public ParserResult parse(String[] args) {
@@ -60,7 +60,7 @@ public class BeatsCommand implements Command {
 
   @Override
   public void run() throws ConfigurationProblem, Bug {
-   Yaml yaml = new Yaml();
+    Yaml yaml = new Yaml();
     Map<String, Object> settings;
     try {
       settings = (Map<String, Object>) yaml.load(new FileReader(settingsPath.getValue().toFile()));
@@ -108,7 +108,7 @@ public class BeatsCommand implements Command {
 
     // XXX: the 'elasticsearch' output supports URLs. Probably should handle this.
     InetSocketAddressInput addressInput = new InetSocketAddressInput(-1); // no default port
-    for (String address : ((List<String>)flatSettings.get(settingsPrefix + ".hosts"))) {
+    for (String address : ((List<String>) flatSettings.get(settingsPrefix + ".hosts"))) {
       Collection<InetAddress> addresses;
       InetSocketAddress inetAddress = addressInput.parse(address);
 
