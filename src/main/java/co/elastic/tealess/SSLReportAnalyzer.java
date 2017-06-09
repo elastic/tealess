@@ -128,7 +128,6 @@ public class SSLReportAnalyzer {
         for (byte b : x) {
           System.out.printf("%02x ", b);
         }
-        ;
         System.out.println();
 
         length -= plaintext.getPayload().limit() + 4;
@@ -148,7 +147,6 @@ public class SSLReportAnalyzer {
               for (byte b : x) {
                 System.out.printf("%02x ", b);
               }
-              ;
               System.out.println();
               break;
             default:

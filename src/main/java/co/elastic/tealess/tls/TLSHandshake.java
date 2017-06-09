@@ -62,7 +62,6 @@ public class TLSHandshake {
     for (byte b : x) {
       System.out.printf("%02x ", b);
     }
-    ;
     System.out.println();
     System.out.println();
     byte[] kex = new byte[length];

@@ -1,5 +1,4 @@
-/*
- * Licensed to Elasticsearch under one or more contributor
+/* * Licensed to Elasticsearch under one or more contributor
  * license agreements. See the NOTICE file distributed with
  * this work for additional information regarding copyright
  * ownership. Elasticsearch licenses this file to you under
@@ -23,6 +22,7 @@ import co.elastic.Bug;
 import co.elastic.tealess.ConfigurationProblem;
 import co.elastic.tealess.cli.environment.CipherSuite;
 import co.elastic.tealess.cli.environment.Protocol;
+import co.elastic.tealess.cli.input.ArgsParser;
 import co.elastic.tealess.cli.input.ParserResult;
 import io.netty.handler.ssl.OpenSsl;
 import io.netty.util.Version;
@@ -82,6 +82,12 @@ public class EnvironmentCommand implements Command {
       throw new Bug("Could not get default SSL Context. Something went wrong.", e);
     }
     return ctx.createSSLEngine();
+  }
+
+  @Override
+  public ArgsParser getParser() {
+    return new ArgsParser()
+      .setDescription("Show TLS-related environment information");
   }
 
   public void run() throws ConfigurationProblem, Bug {

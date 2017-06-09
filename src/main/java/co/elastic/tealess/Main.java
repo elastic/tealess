@@ -20,6 +20,7 @@
 package co.elastic.tealess;
 
 import co.elastic.tealess.cli.*;
+import co.elastic.tealess.cli.input.ArgsParser;
 import co.elastic.tealess.cli.input.ParserResult;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -62,15 +63,19 @@ public class Main {
     try {
       // Remove args[0] from args.
       args = Arrays.stream(args).skip(1).toArray(String[]::new);
-      ParserResult result = command.parse(args);
+      ArgsParser parser = command.getParser();
+      ParserResult result = parser.parse(args);
       if (!result.getSuccess()) {
         if (result.getDetails() != null) {
           System.out.println("Problem: " + result.getDetails());
           if (result.getException() != null) {
             result.getException().printStackTrace(System.out);
           }
+          System.out.println();
+          parser.showHelp(commandName);
           System.exit(1);
         }
+        parser.showHelp(commandName);
         return;
       }
       command.run();

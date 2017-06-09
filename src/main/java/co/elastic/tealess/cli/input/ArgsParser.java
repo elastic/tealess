@@ -32,22 +32,55 @@ import java.util.stream.Collectors;
 public class ArgsParser {
   private static final Logger logger = LogManager.getLogger();
 
-  private List<Setting<?>> namedSettings = new LinkedList<>();
-  private List<Setting<?>> positionalSettings = new LinkedList<>();
+  public interface TryConsumer<T> {
+    void accept(T t) throws Exception;
+  }
+
+  private class Entry<T> implements Parser<T>, TryConsumer<T> {
+    private Setting<T> setting;
+    private TryConsumer<T> consumer;
+
+    public Entry(Setting<T> setting, TryConsumer<T> consumer) {
+      this.setting = setting;
+      this.consumer = consumer;
+    }
+
+    public T parse(String text) throws InvalidValue {
+      T value = setting.parse(text);
+      try {
+        consumer.accept(value);
+      } catch (Exception e) {
+        throw new InvalidValue("Given value " + value + " is not acceptable for " + setting.getName(), e);
+      }
+      return value;
+    }
+
+    public void accept(T value) throws Exception {
+      consumer.accept(value);
+    }
+
+    public Setting<T> getSetting() {
+      return setting;
+    }
+  }
+
+  private List<Entry<?>> namedSettings = new LinkedList<>();
+  private List<Entry<?>> positionalSettings = new LinkedList<>();
   private String description;
 
-  public void setDescription(String description) {
+  public ArgsParser setDescription(String description) {
     this.description = description;
+    return this;
   }
 
-  public Setting addNamed(Setting setting) {
-    namedSettings.add(setting);
-    return setting;
+  public <T> ArgsParser addNamed(Setting<T> setting, TryConsumer<T> consumer) {
+    namedSettings.add(new Entry<T>(setting, consumer));
+    return this;
   }
 
-  public Setting addPositional(Setting setting) {
-    positionalSettings.add(setting);
-    return setting;
+  public <T> ArgsParser addPositional(Setting<T> setting, TryConsumer<T> consumer) {
+    positionalSettings.add(new Entry<T>(setting, consumer));
+    return this;
   }
 
   public ParserResult parse(String[] args) {
@@ -55,28 +88,27 @@ public class ArgsParser {
   }
 
   public ParserResult parse(Iterator<String> args) {
-    String firstArgument;
     int argi = 0;
     ParserResult result;
 
     while (args.hasNext()) {
-      String entry = args.next();
-      if (entry.equals("--")) {
+      String input = args.next();
+      if (input.equals("--")) {
         break;
       }
 
-      if (entry.equals("--help")) {
+      if (input.equals("--help")) {
         return ParserResult.help();
       }
 
-      if (entry.startsWith("-")) {
-        result = parseFlag(entry, args, namedSettings, positionalSettings);
+      if (input.startsWith("-")) {
+        result = parseFlag(input, args, namedSettings, positionalSettings);
         if (!result.getSuccess()) {
           return result;
         }
       } else {
         // First non-flag argument.
-        result = parseArgument(positionalSettings, argi, entry);
+        result = parsePositional(positionalSettings, argi, input);
         argi++;
         if (!result.getSuccess()) {
           return result;
@@ -87,57 +119,58 @@ public class ArgsParser {
 
     for (; args.hasNext(); argi++) {
       String text = args.next();
-      result = parseArgument(positionalSettings, argi, text);
+      result = parsePositional(positionalSettings, argi, text);
       if (!result.getSuccess()) {
         return result;
       }
     }
 
     if (argi < positionalSettings.size()) {
-      return ParserResult.error("Missing required argument " + positionalSettings.get(argi).getName());
+      return ParserResult.error("Missing required argument " + positionalSettings.get(argi).getSetting().getName());
     }
 
     return ParserResult.success();
   }
 
-  private static ParserResult parseArgument(List<Setting<?>> positionalSettings, int argi, String text) {
+  private static ParserResult parsePositional(List<Entry<?>> positionalSettings, int argi, String text) {
     if (argi >= positionalSettings.size()) {
       return ParserResult.error(String.format("Too many arguments given. Extra argument: '%s' is not allowed.", text));
     }
 
-    Setting<?> setting = positionalSettings.get(argi);
+    Entry<?> entry = positionalSettings.get(argi);
     try {
-      Object value = setting.parse(text);
-      logger.debug("Argument '{}' with text '{}' parsed: {}", setting.getName(), text, value);
+      Object value = entry.parse(text);
+      logger.debug("Argument '{}' with text '{}' parsed: {}", entry.getSetting().getName(), text, value);
       return ParserResult.success();
     } catch (InvalidValue e) {
-      return ParserResult.error(String.format("Invalid value for argument %s: %s\n  -> %s", setting.getName(), text, e));
+      return ParserResult.error(String.format("Invalid value for argument %s: %s\n  -> %s", entry.getSetting().getName(), text, e));
     }
-
   }
 
-  private static ParserResult parseFlag(String entry, Iterator<String> args, List<Setting<?>> namedSettings, List<Setting<?>> positionalSettings) {
+  private static ParserResult parseFlag(String input, Iterator<String> args, List<Entry<?>> namedSettings, List<Entry<?>> positionalSettings) {
     boolean flagFound = false;
-    for (Setting<?> setting : namedSettings) {
-      if (positionalSettings.contains(setting)) {
+    for (Entry<?> entry : namedSettings) {
+      if (positionalSettings.contains(entry)) {
         // Don't process an argument setting as a flag.
         continue;
       }
-      if (setting.isFlag(entry)) {
+
+      Setting<?> setting = entry.getSetting();
+      if (setting.isFlag(input)) {
         flagFound = true;
-        String text = args.next();
+        String flagInput = args.next();
         try {
-          Object value = setting.parse(text);
-          logger.debug("Flag --{}={] parsed: {}", entry, text, value);
+          Object value = entry.parse(flagInput);
+          logger.debug("Flag --{}={] parsed: {}", entry, flagInput, value);
         } catch (InvalidValue e) {
-          return ParserResult.error(String.format("Invalid value for flag %s: %s.\n  -> %s", setting.getName(), text, e));
+          return ParserResult.error(String.format("Invalid value for flag %s: %s.\n  -> %s", entry.getSetting().getName(), flagInput, e));
         }
         break;
       }
     }
 
     if (!flagFound) {
-      return ParserResult.error(String.format("Unknown flag: %s", entry));
+      return ParserResult.error(String.format("Unknown flag: %s", input));
     }
 
     return ParserResult.success();
@@ -147,13 +180,14 @@ public class ArgsParser {
     showHelp(name, description, namedSettings, positionalSettings);
   }
 
-  private static void showHelp(String name, String preamble, List<Setting<?>> namedSettings, List<Setting<?>> positionalSettings) {
+  private static void showHelp(String name, String preamble, List<Entry<?>> namedSettings, List<Entry<?>> positionalSettings) {
     System.out.println(preamble);
-    String argsHelp = positionalSettings.stream().map(Setting::getName).collect(Collectors.joining(" "));
+    String argsHelp = positionalSettings.stream().map(Entry::getSetting).map(Setting::getName).collect(Collectors.joining(" "));
     System.out.println("Usage: " + name + " [flags] " + argsHelp);
 
     System.out.println("Flags: ");
-    for (Setting<?> setting : namedSettings) {
+    for (Entry<?> entry : namedSettings) {
+      Setting setting = entry.getSetting();
       String lead = String.format("%s VALUE", setting.getFlag());
       System.out.printf("  %-20s %s", lead, setting.getDescription());
       if (setting.getDefaultValue() != null) {
@@ -163,7 +197,8 @@ public class ArgsParser {
     }
 
     System.out.println("Arguments: ");
-    for (Setting<?> setting : positionalSettings) {
+    for (Entry<?> entry : positionalSettings) {
+      Setting setting = entry.getSetting();
       String lead = String.format("%s VALUE", setting.getName());
       System.out.printf("  %-20s %s", lead, setting.getDescription());
       if (setting.getDefaultValue() != null) {

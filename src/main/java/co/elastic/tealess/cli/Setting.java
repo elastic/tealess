@@ -19,21 +19,16 @@
 
 package co.elastic.tealess.cli;
 
+import co.elastic.tealess.cli.input.ArgsParser;
 import co.elastic.tealess.cli.input.InvalidValue;
+import co.elastic.tealess.cli.input.Parser;
+import co.elastic.tealess.cli.input.Validator;
 
-public class Setting<T> {
+public class Setting<T> implements Parser<T> {
   private int argument = -1; // Nothing is an argument by default.
 
   public String getDescription() {
     return description;
-  }
-
-  public interface Validator<T> {
-    ValidationResult validate(T value);
-  }
-
-  public interface Parser<T> {
-    T parse(String text);
   }
 
   public interface InputHandler<T> extends Validator<T>, Parser<T> {
@@ -64,7 +59,7 @@ public class Setting<T> {
     return String.format("--%s", getName());
   }
 
-  public Setting setDefaultValue(T value) {
+  public Setting<T> setDefaultValue(T value) {
     default_value = value;
     return this;
   }
@@ -73,12 +68,12 @@ public class Setting<T> {
     return default_value;
   }
 
-  public Setting parseWith(Parser<T> parser) {
+  public Setting<T> parseWith(Parser<T> parser) {
     this.parser = parser;
     return this;
   }
 
-  public Setting validateWith(Validator<T> validator) {
+  public Setting<T> validateWith(Validator<T> validator) {
     this.validator = validator;
     return this;
   }
@@ -91,7 +86,7 @@ public class Setting<T> {
     T value = this.parser.parse(text);
 
     if (this.validator != null) {
-      ValidationResult result = validator.validate(value);
+      Validator.Result result = validator.validate(value);
       if (!result.isValid()) {
         throw new InvalidValue(String.format("Validation for %s failed. %s", getName(), result.getDetails()), value);
       }

@@ -29,7 +29,6 @@ import co.elastic.tealess.cli.input.PathInput;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.core.LoggerContext;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -51,22 +50,20 @@ import java.util.stream.Collectors;
  * Created by jls on 10/27/16.
  */
 public class ConnectCommand implements Command {
-  private static final String PACKAGE_LOGGER_NAME = "co.elastic";
   private static final Logger logger = LogManager.getLogger();
-  public static final String DESCRIPTION = "Connect to an address with SSL/TLS and diagnose the result.";
+
+  private static final String DESCRIPTION = "Connect to an address with SSL/TLS and diagnose the result.";
   private final KeyStoreBuilder keys;
   private final KeyStoreBuilder trust;
 
-  private final ArgsParser parser = new ArgsParser();
+  private void setAddress(InetSocketAddress address) {
+    this.address = address;
+  }
 
-  private final Setting<Path> capath = parser.addNamed(new Setting<>("capath", "The path to a file containing one or more certificates to trust in PEM format.", PathInput.singleton));
-  private final Setting<Path> trustStore = parser.addNamed(new Setting<>("truststore", "The path to a java keystore or pkcs12 file containing certificate authorities to trust", PathInput.singleton))
-    .setDefaultValue(KeyStoreBuilder.defaultTrustStorePath);
-  private final Setting<Path> keyStore = parser.addNamed(new Setting<>("keystore", "The path to a java keystore or pkcs12 file containing private key(s) and client certificates to use when connecting to a remote server.", PathInput.singleton));
-  private final Setting<Level> logLevel = parser.addNamed(new Setting<Level>("log-level", "The log level"))
-    .setDefaultValue(Level.INFO)
-    .parseWith(Level::valueOf);
-  private final Setting<InetSocketAddress> address = parser.addPositional(new Setting<>("address", "The address in form of `host` or `host:port` to connect", new InetSocketAddressInput(443)));
+  private Path capath = null;
+  private Path trustStore = null;
+  private Path keyStore = null;
+  private InetSocketAddress address = null;
 
   public ConnectCommand() throws Bug {
     try {
@@ -77,59 +74,49 @@ public class ConnectCommand implements Command {
     }
   }
 
-  public ParserResult parse(String[] args) {
-    parser.setDescription(DESCRIPTION);
-    Iterator<String> argsi = Arrays.asList(args).iterator();
-
-    ParserResult result = parser.parse(argsi);
-    if (!result.getSuccess()) {
-      if (result.getDetails() != null) {
-        System.out.println(result.getDetails());
-        System.out.println();
-      }
-      parser.showHelp("tealess");
-      return result;
-    }
-
-    if (capath.getValue() != null) {
-      try {
-        logger.info("Adding to trust: capath {}", capath.getValue());
-        trust.addCAPath(capath.getValue());
-      } catch (CertificateException | IOException | KeyStoreException e) {
-        return ParserResult.error("Failed adding certificate authorities from path " + capath.getValue(), e);
-      }
-    }
-
-    if (trustStore.getValue() != null) {
-      try {
-        trust.useKeyStore(trustStore.getValue().toFile());
-      } catch (IOException | KeyStoreException | UnrecoverableKeyException | CertificateException | NoSuchAlgorithmException e) {
-        return ParserResult.error("Failed trying to use keystore " + trustStore.getValue(), e);
-      }
-    }
-
-    if (keyStore.getValue() != null) {
-      try {
-        keys.useKeyStore(keyStore.getValue().toFile());
-      } catch (IOException | KeyStoreException | UnrecoverableKeyException | CertificateException | NoSuchAlgorithmException e) {
-        return ParserResult.error("Failed trying to use keystore " + keyStore, e);
-      }
-    } else {
-      try {
-        keys.empty();
-      } catch (CertificateException | NoSuchAlgorithmException | KeyStoreException | IOException | UnrecoverableKeyException e) {
-        return ParserResult.error("Failed creating empty key store", e);
-      }
-    }
-
-    if (logLevel.getValue() != null) {
-      LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
-      ctx.getConfiguration().getLoggerConfig(PACKAGE_LOGGER_NAME).setLevel(logLevel.getValue());
-      ctx.updateLoggers();
-    }
-    return result;
+  private void setCAPath(Path path) throws CertificateException, KeyStoreException, IOException {
+    logger.info("Adding to trust: capath {}", path);
+    trust.addCAPath(path);
+    //} catch (CertificateException | IOException | KeyStoreException e) {
+      //return ParserResult.error("Failed adding certificate authorities from path " + path, e);
+    //}
   }
 
+  private void setTrustStore(Path path) throws UnrecoverableKeyException, CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException {
+    trust.useKeyStore(trustStore.toFile());
+    //} catch (IOException | KeyStoreException | UnrecoverableKeyException | CertificateException | NoSuchAlgorithmException e) {
+      //return ParserResult.error("Failed trying to use keystore " + trustStore, e);
+    //}
+  }
+
+  private void setKeyStore(Path path) throws UnrecoverableKeyException, CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException {
+    if (keyStore != null) {
+      //try {
+        keys.useKeyStore(keyStore.toFile());
+      //} catch (IOException | KeyStoreException | UnrecoverableKeyException | CertificateException | NoSuchAlgorithmException e) {
+        //return ParserResult.error("Failed trying to use keystore " + keyStore, e);
+      //}
+    } else {
+      //try {
+        keys.empty();
+      //} catch (CertificateException | NoSuchAlgorithmException | KeyStoreException | IOException | UnrecoverableKeyException e) {
+        //return ParserResult.error("Failed creating empty key store", e);
+      //}
+    }
+  }
+
+  @Override
+  public ArgsParser getParser() {
+    return new ArgsParser()
+      .setDescription(DESCRIPTION)
+      .addNamed(new Setting<Level>("log-level", "The log level").setDefaultValue(Level.WARN).parseWith(Level::valueOf), LogUtils::setLogLevel)
+      .addNamed(new Setting<>("capath", "The path to a file containing one or more certificates to trust in PEM format.", PathInput.singleton), this::setCAPath)
+      .addNamed(new Setting<>("truststore", "The path to a java keystore or pkcs12 file containing certificate authorities to trust", PathInput.singleton).setDefaultValue(KeyStoreBuilder.defaultTrustStorePath), this::setTrustStore)
+      .addNamed(new Setting<>("keystore", "The path to a java keystore or pkcs12 file containing private key(s) and client certificates to use when connecting to a remote server.", PathInput.singleton), this::setKeyStore)
+      .addPositional(new Setting<>("address", "The address in form of `host` or `host:port` to connect", new InetSocketAddressInput(443)), this::setAddress);
+  }
+
+  @Override
   public void run() throws ConfigurationProblem, Bug {
     SSLContextBuilder cb = new SSLContextBuilder();
     try {
@@ -146,7 +133,7 @@ public class ConnectCommand implements Command {
       throw new ConfigurationProblem("Failed to build tealess context.", e);
     }
 
-    String hostname = address.getValue().getHostString();
+    String hostname = address.getHostString();
 
     Collection<InetAddress> addresses;
     try {
@@ -158,7 +145,7 @@ public class ConnectCommand implements Command {
 
     System.out.printf("%s resolved to %d addresses\n", hostname, addresses.size());
     List<SSLReport> reports = addresses.stream()
-      .map(a -> checker.check(new InetSocketAddress(a, address.getValue().getPort()), hostname))
+      .map(a -> checker.check(new InetSocketAddress(a, address.getPort()), hostname))
       .collect(Collectors.toList());
 
     System.out.println();

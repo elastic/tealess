@@ -8,7 +8,6 @@ import co.elastic.tealess.cli.input.ParserResult;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.core.LoggerContext;
 
 import java.io.*;
 import java.net.InetSocketAddress;
@@ -29,51 +28,39 @@ import java.util.List;
 public class TrustCommand implements Command {
   private static final String OPENSSL_CERTIFICATE_HEADER = "-----BEGIN CERTIFICATE-----";
   private static final String OPENSSL_CERTIFICATE_FOOTER = "-----END CERTIFICATE-----";
-  private static final String PACKAGE_LOGGER_NAME = "co.elastic";
   private static final Logger logger = LogManager.getLogger();
   private static final String DESCRIPTION = "Fetch a remote server's ssl certificate and save it locally.";
-
   private static final Base64.Encoder b64encoder = Base64.getMimeEncoder();
 
-  private final ArgsParser parser = new ArgsParser();
-  //private final Setting<Path> capath = parser.addNamed(new Setting<>("capath", "The path to a file containing one or more certificates to trust in PEM format.", PathInput.singleton));
-
-  private final Setting<Path> trustStore = parser.addNamed(new Setting<>("truststore", "The path to a java keystore or pkcs12 file to save any retrieved certificates"))
-    .parseWith(Paths::get);
-  private final Setting<Path> pemPath = parser.addNamed(new Setting<>("pem", "The path to a file to write the PEM-formatted certificate chain"))
-    .parseWith(Paths::get);
-  private final Setting<Level> logLevel = parser.addNamed(new Setting<Level>("log-level", "The log level"))
-    .setDefaultValue(Level.WARN)
-    .parseWith(Level::valueOf);
-  private final Setting<InetSocketAddress> address = parser.addPositional(new Setting<>("address", "The address in form of `host` or `host:port` to connect", new InetSocketAddressInput(443)));
-
   @Override
-  public ParserResult parse(String[] args) {
-    parser.setDescription(DESCRIPTION);
-    ParserResult result = parser.parse(args);
-    if (!result.getSuccess()) {
-      if (result.getDetails() != null) {
-        System.out.println(result.getDetails());
-        System.out.println();
-      }
-      parser.showHelp("trust");
-      return result;
-    }
-
-    System.out.printf("Log level: %s\n", logLevel.getValue());
-    if (logLevel.getValue() != null) {
-      LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
-      ctx.getConfiguration().getLoggerConfig(PACKAGE_LOGGER_NAME).setLevel(logLevel.getValue());
-      ctx.updateLoggers();
-    }
-
-    return result;
+  public ArgsParser getParser() {
+    return new ArgsParser()
+      .addNamed(new Setting<Level>("log-level", "The log level").setDefaultValue(Level.WARN).parseWith(Level::valueOf), LogUtils::setLogLevel)
+      .addNamed(new Setting<Path>("truststore", "The path to a java keystore or pkcs12 file to save any retrieved certificates").parseWith(Paths::get), this::setTrustStore)
+      .addNamed(new Setting<Path>("pem", "The path to a file to write the PEM-formatted certificate chain").parseWith(Paths::get), this::setPEMPath)
+      .addPositional(new Setting<>("address", "The address in form of `host` or `host:port` to connect", new InetSocketAddressInput(443)), this::setAddress);
   }
+
+  private void setTrustStore(Path path) {
+    trustStore = path;
+  }
+
+  private void setPEMPath(Path path) {
+    pemPath = path;
+  }
+
+  private void setAddress(InetSocketAddress address) {
+    this.address = address;
+  }
+
+  private Path trustStore = null;
+  private Path pemPath = null;
+  private InetSocketAddress address = null;
 
   @Override
   public void run() throws ConfigurationProblem, Bug {
     final SSLChecker checker = getSSLChecker();
-    final List<SSLReport> reports = checker.checkAll(address.getValue());
+    final List<SSLReport> reports = checker.checkAll(address);
 
     for (SSLReport report : reports) {
       if (!report.success()) {
@@ -88,18 +75,18 @@ public class TrustCommand implements Command {
       }
 
       final X509Certificate[] chain = peerCertificateDetails.getChain();
-      System.out.println("Trust: " + trustStore.getValue());
-      System.out.println("PEM: " + pemPath.getValue());
+      System.out.println("Trust: " + trustStore);
+      System.out.println("PEM: " + pemPath);
 
-      if (pemPath.getValue() == null && trustStore.getValue() == null) {
+      if (pemPath == null && trustStore == null) {
         writePEM(System.out, chain);
       } else {
-        if (pemPath.getValue() != null) {
-          writePEM(pemPath.getValue(), chain);
+        if (pemPath != null) {
+          writePEM(pemPath, chain);
         }
 
-        if (trustStore.getValue() != null) {
-          writeTrustStore(trustStore.getValue(), chain, report.getAddress());
+        if (trustStore != null) {
+          writeTrustStore(trustStore, chain, report.getAddress());
         }
 
       }

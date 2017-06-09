@@ -21,13 +21,14 @@ package co.elastic.tealess.cli;
 
 import co.elastic.Bug;
 import co.elastic.tealess.ConfigurationProblem;
+import co.elastic.tealess.cli.input.ArgsParser;
 import co.elastic.tealess.cli.input.ParserResult;
 
 /**
  * Created by jls on 1/20/17.
  */
 public interface Command {
-  ParserResult parse(String[] args);
+  ArgsParser getParser();
 
   void run() throws ConfigurationProblem, Bug;
 }

@@ -18,7 +18,7 @@ public class IOLog {
   }
 
   public enum Operation {
-    Read, Write;
+    Read, Write
   }
 
   private static final Logger logger = LogManager.getLogger();

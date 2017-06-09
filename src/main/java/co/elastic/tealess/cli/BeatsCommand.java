@@ -35,43 +35,36 @@ import java.util.stream.Collectors;
 public class BeatsCommand implements Command {
   private static final Logger logger = LogManager.getLogger();
   private static final String DESCRIPTION = "Test TLS settings from an Elastic Beats configuration.";
-
-  private final ArgsParser parser = new ArgsParser();
-  private final Setting<Path> settingsPath = parser.addPositional(new Setting<>("settings", "The path to the beats yaml", PathInput.singleton));
+  private Path settingsPath = null;
 
   // Beats output configuration sections to analyze.
-  private final String[] outputs = {"logstash", "elasticsearch", "redis", "kafka"};
+  private final String[] outputs = { "logstash", "elasticsearch", "redis", "kafka" };
+
+  public void setSettingsPath(Path path) {
+    settingsPath = path;
+  }
 
   @Override
-  public ParserResult parse(String[] args) {
-    parser.setDescription(DESCRIPTION);
-    ParserResult result = parser.parse(args);
-    if (!result.getSuccess()) {
-      if (result.getDetails() != null) {
-        System.out.println(result.getDetails());
-        System.out.println();
-      }
-      parser.showHelp("beats");
-      return result;
-    }
-
-    return result;
+  public ArgsParser getParser() {
+    return new ArgsParser()
+      .setDescription(DESCRIPTION)
+      .<Path>addPositional(new Setting<Path>("settings", "The path to the beats yaml", PathInput.singleton), this::setSettingsPath);
   }
 
   @Override
   public void run() throws ConfigurationProblem, Bug {
-    Yaml yaml = new Yaml();
+   Yaml yaml = new Yaml();
     Map<String, Object> settings;
     try {
-      settings = (Map<String, Object>) yaml.load(new FileReader(settingsPath.getValue().toFile()));
+      settings = (Map<String, Object>) yaml.load(new FileReader(settingsPath.toFile()));
     } catch (FileNotFoundException e) {
-      throw new ConfigurationProblem("The specified configuration file does not exist:" + settingsPath.getValue(), e);
+      throw new ConfigurationProblem("The specified configuration file does not exist:" + settingsPath, e);
     }
 
     Map<String, Object> flatSettings = MapUtil.flattenMap(settings);
     for (String output : outputs) {
       if (flatSettings.keySet().stream().anyMatch(key -> key.startsWith("output." + output + ".ssl"))) {
-        System.out.println("Checking " + output + " output in " + settingsPath.getValue());
+        System.out.println("Checking " + output + " output in " + settingsPath);
         check(flatSettings, "output." + output);
       }
     }
@@ -108,7 +101,7 @@ public class BeatsCommand implements Command {
 
     // XXX: the 'elasticsearch' output supports URLs. Probably should handle this.
     InetSocketAddressInput addressInput = new InetSocketAddressInput(-1); // no default port
-    for (String address : ((List<String>) flatSettings.get(settingsPrefix + ".hosts"))) {
+    for (String address : ((List<String>)flatSettings.get(settingsPrefix + ".hosts"))) {
       Collection<InetAddress> addresses;
       InetSocketAddress inetAddress = addressInput.parse(address);
 
