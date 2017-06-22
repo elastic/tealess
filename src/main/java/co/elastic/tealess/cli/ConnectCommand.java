@@ -35,6 +35,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -61,7 +62,6 @@ public class ConnectCommand implements Command {
   }
 
   private Path capath = null;
-  private Path trustStore = null;
   private Path keyStore = null;
   private InetSocketAddress address = null;
 
@@ -83,7 +83,7 @@ public class ConnectCommand implements Command {
   }
 
   private void setTrustStore(Path path) throws UnrecoverableKeyException, CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException {
-    trust.useKeyStore(trustStore.toFile());
+    trust.useKeyStore(path.toFile());
     //} catch (IOException | KeyStoreException | UnrecoverableKeyException | CertificateException | NoSuchAlgorithmException e) {
       //return ParserResult.error("Failed trying to use keystore " + trustStore, e);
     //}
@@ -110,9 +110,9 @@ public class ConnectCommand implements Command {
     return new ArgsParser()
       .setDescription(DESCRIPTION)
       .addNamed(new Setting<Level>("log-level", "The log level").setDefaultValue(Level.WARN).parseWith(Level::valueOf), LogUtils::setLogLevel)
-      .addNamed(new Setting<>("capath", "The path to a file containing one or more certificates to trust in PEM format.", PathInput.singleton), this::setCAPath)
-      .addNamed(new Setting<>("truststore", "The path to a java keystore or pkcs12 file containing certificate authorities to trust", PathInput.singleton).setDefaultValue(KeyStoreBuilder.defaultTrustStorePath), this::setTrustStore)
-      .addNamed(new Setting<>("keystore", "The path to a java keystore or pkcs12 file containing private key(s) and client certificates to use when connecting to a remote server.", PathInput.singleton), this::setKeyStore)
+      .addNamed(new Setting<Path>("capath", "The path to a file containing one or more certificates to trust in PEM format.").parseWith(Paths::get), this::setCAPath)
+      .addNamed(new Setting<Path>("truststore", "The path to a java keystore or pkcs12 file containing certificate authorities to trust").parseWith(Paths::get), this::setTrustStore)
+      .addNamed(new Setting<Path>("keystore", "The path to a java keystore or pkcs12 file containing private key(s) and client certificates to use when connecting to a remote server.").parseWith(Paths::get), this::setKeyStore)
       .addPositional(new Setting<>("address", "The address in form of `host` or `host:port` to connect", new InetSocketAddressInput(443)), this::setAddress);
   }
 

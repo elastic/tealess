@@ -83,9 +83,9 @@ public class Setting<T> implements Parser<T> {
   }
 
   public T parse(String text) throws InvalidValue {
-    T value = this.parser.parse(text);
+    T value = parser.parse(text);
 
-    if (this.validator != null) {
+    if (validator != null) {
       Validator.Result result = validator.validate(value);
       if (!result.isValid()) {
         throw new InvalidValue(String.format("Validation for %s failed. %s", getName(), result.getDetails()), value);
@@ -109,7 +109,7 @@ public class Setting<T> implements Parser<T> {
   }
 
   public Setting<T> asArgument(int i) {
-    this.argument = i;
+    argument = i;
     return this;
   }
 
