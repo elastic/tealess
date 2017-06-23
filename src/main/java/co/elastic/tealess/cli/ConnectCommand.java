@@ -61,7 +61,6 @@ public class ConnectCommand implements Command {
     this.address = address;
   }
 
-  private Path capath = null;
   private Path keyStore = null;
   private InetSocketAddress address = null;
 
@@ -77,31 +76,17 @@ public class ConnectCommand implements Command {
   private void setCAPath(Path path) throws CertificateException, KeyStoreException, IOException {
     logger.info("Adding to trust: capath {}", path);
     trust.addCAPath(path);
-    //} catch (CertificateException | IOException | KeyStoreException e) {
-      //return ParserResult.error("Failed adding certificate authorities from path " + path, e);
-    //}
   }
 
   private void setTrustStore(Path path) throws UnrecoverableKeyException, CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException {
     trust.useKeyStore(path.toFile());
-    //} catch (IOException | KeyStoreException | UnrecoverableKeyException | CertificateException | NoSuchAlgorithmException e) {
-      //return ParserResult.error("Failed trying to use keystore " + trustStore, e);
-    //}
   }
 
   private void setKeyStore(Path path) throws UnrecoverableKeyException, CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException {
     if (keyStore != null) {
-      //try {
-        keys.useKeyStore(keyStore.toFile());
-      //} catch (IOException | KeyStoreException | UnrecoverableKeyException | CertificateException | NoSuchAlgorithmException e) {
-        //return ParserResult.error("Failed trying to use keystore " + keyStore, e);
-      //}
+      keys.useKeyStore(keyStore.toFile());
     } else {
-      //try {
-        keys.empty();
-      //} catch (CertificateException | NoSuchAlgorithmException | KeyStoreException | IOException | UnrecoverableKeyException e) {
-        //return ParserResult.error("Failed creating empty key store", e);
-      //}
+      keys.empty();
     }
   }
 
