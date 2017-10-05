@@ -17,8 +17,9 @@
  * under the License.
  */
 
-package co.elastic.tealess;
+package co.elastic.tealess.cli;
 
+import co.elastic.tealess.ConfigurationProblem;
 import co.elastic.tealess.cli.*;
 import co.elastic.tealess.cli.input.ArgsParser;
 import co.elastic.tealess.cli.input.ParserResult;

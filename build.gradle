@@ -20,8 +20,9 @@ apply plugin: "java"
 apply plugin: "distribution"
 apply plugin: "application"
 apply plugin: "idea"
+apply plugin: "antlr"
 
-mainClassName = "co.elastic.tealess.Main"
+mainClassName = "co.elastic.tealess.cli.Main"
 
 repositories {
   mavenCentral()

@@ -9,6 +9,7 @@ import java.nio.ByteBuffer;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -110,7 +111,7 @@ public class TLSHandshake {
   }
 
   private static TLSHandshake parseCertificate(ByteBuffer buffer, int length) {
-    CertificateFactory certificateFactory = null;
+    CertificateFactory certificateFactory;
     try {
       certificateFactory = CertificateFactory.getInstance("X.509");
     } catch (CertificateException e) {
@@ -130,7 +131,6 @@ public class TLSHandshake {
       byte[] certificateEntry = BufferUtil.readOpaque24(buffer);
       certificatesLength -= certificateEntry.length + 3;
 
-      // XXX: Can certificateFactory.generateCertificates work on this?
       try {
         chain.add(certificateFactory.generateCertificate(new ByteArrayInputStream(certificateEntry)));
       } catch (CertificateException e) {
@@ -172,7 +172,7 @@ public class TLSHandshake {
 
     int cipherSuitesLength = BufferUtil.readUInt16(buffer);
     int numCipherSuites = cipherSuitesLength / 2; // 2 bytes per cipher suite
-    List<CipherSuite> cipherSuites = new LinkedList<>();
+    List<CipherSuite> cipherSuites = new ArrayList<>(numCipherSuites);
     // XXX: Parse the cipher suites list.)
     for (int i = 0; i < numCipherSuites; i++) {
       try {

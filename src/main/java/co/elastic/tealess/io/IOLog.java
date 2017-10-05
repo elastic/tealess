@@ -8,6 +8,7 @@ import java.nio.ByteBuffer;
 /**
  * Created by jls on 5/1/2017.
  */
+@Deprecated
 public class IOLog {
   public ByteBuffer getBuffer() {
     return buffer;
@@ -24,8 +25,8 @@ public class IOLog {
   private static final Logger logger = LogManager.getLogger();
 
   private long timestamp = System.nanoTime();
-  private Operation operation;
-  private ByteBuffer buffer;
+  private final Operation operation;
+  private final ByteBuffer buffer;
 
   private IOLog(Operation operation, ByteBuffer buffer) {
     this.operation = operation;

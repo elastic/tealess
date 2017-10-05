@@ -12,15 +12,16 @@ import java.util.List;
 /**
  * Created by jls on 4/13/2017.
  */
+@Deprecated
 public class IOObserver {
   private static final Logger logger = LogManager.getLogger();
 
-  private List<IOLog> ioLogs = new LinkedList<>();
+  private final List<IOLog> ioLogs = new LinkedList<>();
 
-  private ByteArrayOutputStream networkIn = new ByteArrayOutputStream();
-  private ByteArrayOutputStream networkOut = new ByteArrayOutputStream();
+  private final ByteArrayOutputStream networkIn = new ByteArrayOutputStream();
+  private final ByteArrayOutputStream networkOut = new ByteArrayOutputStream();
 
-  static void writeSilent(ByteBuffer buffer, ByteArrayOutputStream out) {
+  private static void writeSilent(ByteBuffer buffer, ByteArrayOutputStream out) {
     try {
       BufferUtil.write(buffer, out);
     } catch (IOException e) {
