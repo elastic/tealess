@@ -39,10 +39,15 @@ public class SocketWrapperTest {
 
     @Test
     public void testApacheHTTPClient() throws IOException {
-        CloseableHttpClient client = HttpClients.custom().setSSLContext(context).build();
-        HttpGet get = new HttpGet("https://twitter.com/");
-        CloseableHttpResponse response = client.execute(get);
-        System.out.println(response.getStatusLine());
+        try {
+            CloseableHttpClient client = HttpClients.custom().setSSLContext(context).build();
+            //HttpGet get = new HttpGet("https://twitter.com/");
+            HttpGet get = new HttpGet("https://192.168.1.205:9200/");
+            CloseableHttpResponse response = client.execute(get);
+            System.out.println(response.getStatusLine());
+        } catch (IOException e) {
+            System.out.println("Exception: " + e.getClass() + ": " + e);
+        }
     }
 
 

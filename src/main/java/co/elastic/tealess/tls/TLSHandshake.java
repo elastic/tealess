@@ -6,6 +6,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.ByteArrayInputStream;
 import java.nio.ByteBuffer;
+import java.security.Key;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
@@ -18,6 +19,7 @@ import java.util.stream.IntStream;
 
 public class TLSHandshake {
   private static final Logger logger = LogManager.getLogger();
+  private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
 
   public static TLSHandshake parse(ByteBuffer buffer) throws InvalidValue {
     //byte[] x = new byte[100]; buffer.mark(); buffer.get(x); buffer.reset(); for (byte b : x) { System.out.printf("%02x ", b); }; System.out.println();
@@ -71,10 +73,15 @@ public class TLSHandshake {
   }
 
   private static TLSHandshake parseHelloRequest(ByteBuffer buffer, int length) {
+    // RFC 5246 A.4.1:  struct { } HelloRequest;
+    // Hello Request has no parameters.
     return new HelloRequest();
   }
 
-  private static TLSHandshake parseServerKeyExchange(ByteBuffer buffer, int length) {
+  private static TLSHandshake parseServerKeyExchange(ByteBuffer buffer, int length) throws InvalidValue {
+    // Skip the key exchange details itself because I don't need this information yet
+    // and it is a pretty complicated structure.
+    buffer.position(buffer.position() + length);
     return new ServerKeyExchange();
   }
 
@@ -209,12 +216,10 @@ public class TLSHandshake {
 
     // Per RFC, older clients may not support extensions and thus won't send any.
     if (buffer.hasRemaining()) {
-      extensionsLength = buffer.get();
+      // RFC 5246 A.4.1 -- Extension extensions<0..2^16-1>
+      return BufferUtil.readOpaque16(buffer);
     }
-    byte[] extensionData = new byte[extensionsLength];
-    // XXX: Parse the extension data
-    buffer.get(extensionData);
-    return extensionData;
+    return EMPTY_BYTE_ARRAY;
   }
 
   public String toString() {

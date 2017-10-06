@@ -78,105 +78,11 @@ public class SSLReportAnalyzer {
     } else if (blame == javax.net.ssl.SSLHandshakeException.class) {
       analyzeHandshakeProblem(report);
     } else if (blame == javax.net.ssl.SSLException.class && report.getException().getMessage().matches("Received fatal alert: handshake_failure")) {
-      analyzeHandshakeRejected(report);
+      //analyzeHandshakeRejected(report);
     } else if (blame == java.io.IOException.class) {
-      analyzeHandshakeRejected(report);
+      //analyzeHandshakeRejected(report);
     } else {
       System.out.println("  Analysis: " + report.getException().getMessage());
-    }
-  }
-
-  private static void analyzeHandshakeRejected(SSLReport report) {
-    System.out.println("  The SSL/TLS handshake attempt was terminated by the remote server.");
-    System.out.println("  One possibility is that the server requires the client to provide a certificate for validation, and maybe the client did not provide one.");
-    if (report.getIOObserver() == null) {
-      System.out.println("  -- No data was transmitted.. this is probably a bug in this tool.");
-      return;
-    }
-    List<IOLog> logs = report.getIOObserver().getLog();
-    ByteBuffer inputData = report.getIOObserver().getInputData();
-    ByteBuffer outputData = report.getIOObserver().getOutputData();
-    for (IOLog entry : logs) {
-      int length = entry.getBuffer().limit();
-      ByteBuffer buffer = null;
-      switch (entry.getOperation()) {
-        case Read:
-          buffer = inputData;
-          break;
-        case Write:
-          buffer = outputData;
-          break;
-      }
-
-      while (length > 0) {
-        TLSPlaintext plaintext;
-
-        try {
-          plaintext = TLSPlaintext.parse(buffer);
-        } catch (InvalidValue e) {
-          e.printStackTrace();
-          return;
-        }
-
-        ByteBuffer dup = plaintext.getPayload();
-        System.out.println();
-        System.out.printf("=> Buffer: %s\n", dup);
-        byte[] x = new byte[dup.limit() - dup.position()];
-        dup.mark();
-        dup.get(x);
-        dup.reset();
-        for (byte b : x) {
-          System.out.printf("%02x ", b);
-        }
-        System.out.println();
-
-        length -= plaintext.getPayload().limit() + 4;
-        try {
-          switch (plaintext.getContentType()) {
-            case Handshake:
-              TLSHandshake handshake = TLSDecoder.decodeHandshake(plaintext.getPayload());
-              System.out.printf(":: %s: %s\n", entry.getOperation(), handshake);
-              System.out.printf(":: remaining %s\n", plaintext.getPayload());
-              ByteBuffer dup2 = plaintext.getPayload();
-              System.out.println();
-              System.out.printf("=> Buffer After: %s\n", dup2);
-              x = new byte[dup2.limit() - dup2.position()];
-              dup2.mark();
-              dup2.get(x);
-              dup2.reset();
-              for (byte b : x) {
-                System.out.printf("%02x ", b);
-              }
-              System.out.println();
-              break;
-            default:
-              System.out.printf(":: %s: %s\n", entry.getOperation(), plaintext.getPayload());
-              break;
-          }
-        } catch (InvalidValue invalidValue) {
-          invalidValue.printStackTrace();
-        } catch (BufferUnderflowException e) {
-          break;
-        }
-      }
-    }
-
-
-    ServerHello serverHello = null;
-    while (true) {
-      try {
-        TLSPlaintext plaintext = TLSDecoder.decode(inputData);
-        switch (plaintext.getContentType()) {
-          case Handshake:
-            TLSHandshake handshake = TLSDecoder.decodeHandshake(plaintext.getPayload());
-            System.out.println("recv: " + handshake);
-            break;
-        }
-      } catch (InvalidValue invalidValue) {
-        invalidValue.printStackTrace();
-      } catch (BufferUnderflowException e) {
-        break;
-      }
     }
   }
 

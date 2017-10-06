@@ -1,5 +1,7 @@
 package co.elastic.tealess.tls;
 
+import co.elastic.tealess.SSLState;
+
 import java.nio.ByteBuffer;
 
 /**

@@ -5,10 +5,13 @@ import co.elastic.tealess.io.SSLSocketProxy;
 import co.elastic.tealess.io.SocketProxy;
 import co.elastic.tealess.io.Transaction;
 import co.elastic.tealess.tls.CertificateMessage;
+import co.elastic.tealess.tls.CipherSuite;
 import co.elastic.tealess.tls.InvalidValue;
+import co.elastic.tealess.tls.ServerHello;
 import co.elastic.tealess.tls.TLSDecoder;
 import co.elastic.tealess.tls.TLSHandshake;
 import co.elastic.tealess.tls.TLSPlaintext;
+import org.apache.commons.codec.binary.Hex;
 
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSocket;
@@ -74,9 +77,13 @@ public class DiagnosticTLSObserver implements TLSObserver {
     }
 
     private void readLog(StringBuilder builder) {
-
         builder.append("Here is a network log before the failure:\n");
         int inputBytes = 0, outputBytes = 0;
+//        inputBuffer.mark();
+//        byte[] lead = new byte[inputBuffer.limit()];
+        //inputBuffer.get(lead);
+        //System.out.println(Hex.encodeHexString(lead));
+        //inputBuffer.reset();
         for (Transaction<?> transaction : log) {
             int length;
             switch(transaction.op) {
@@ -116,6 +123,8 @@ public class DiagnosticTLSObserver implements TLSObserver {
                 builder.append(String.format("Invalid value decoding handshake: %s\n", e));
                 return;
             }
+            //System.out.println(plaintext);
+
             switch (plaintext.getContentType()) {
                 case ChangeCipherSpec:
                 case Alert:
@@ -123,43 +132,48 @@ public class DiagnosticTLSObserver implements TLSObserver {
                     builder.append(String.format("%s\n", plaintext.getContentType()));
                     break;
                 case Handshake:
-                    final TLSHandshake handshake;
-                    try {
-                        handshake = TLSDecoder.decodeHandshake(plaintext.getPayload());
-                    } catch (InvalidValue e) {
-                        builder.append(String.format("Invalid value decoding handshake: %s\n", e));
-                        return;
-                    }
-                    builder.append(String.format("Handshake message: %s\n", handshake));
-                    if (handshake instanceof CertificateMessage) {
-                        CertificateMessage message = (CertificateMessage) handshake;
-                        int i = 0;
-                        for (Certificate certificate : message.getChain()) {
-                            X509Certificate x509 = (X509Certificate) certificate;
-                            builder.append(String.format("%d: %s\n", i, x509.getSubjectX500Principal()));
-                            try {
-                                if (x509.getSubjectAlternativeNames() != null) {
-                                    for (List<?> x : x509.getSubjectAlternativeNames()) {
-                                        int type = (Integer) x.get(0);
-                                        String value = (String) x.get(1);
-                                        switch (type) {
-                                            case 2: // dNSName per RFC5280 4.2.1.6
-                                                builder.append(String.format("  subjectAlt: DNS:%s\n", value));
-                                                break;
-                                            case 7: // iPAddress per RFC5280 4.2.1.6
-                                                builder.append(String.format("  subjectAlt: IP:%s\n", value));
-                                                break;
-                                            default:
-                                                builder.append(String.format("  subjectAlt: [%d]:%s\n", type, value));
-                                                break;
+                    // multiple handshake messages can be contained in a single TLSPlaintext
+                    ByteBuffer plainPayload = plaintext.getPayload();
+                    while (plainPayload.hasRemaining()) {
+                        //System.out.println(plainPayload);
+                        final TLSHandshake handshake;
+                        try {
+                            handshake = TLSDecoder.decodeHandshake(plainPayload);
+                        } catch (InvalidValue e) {
+                            builder.append(String.format("Invalid value decoding handshake: %s\n", e));
+                            return;
+                        }
+                        builder.append(String.format("Handshake message: %s || %s\n", handshake, plainPayload));
+                        if (handshake instanceof CertificateMessage) {
+                            CertificateMessage message = (CertificateMessage) handshake;
+                            int i = 0;
+                            for (Certificate certificate : message.getChain()) {
+                                X509Certificate x509 = (X509Certificate) certificate;
+                                builder.append(String.format("%d: %s\n", i, x509.getSubjectX500Principal()));
+                                try {
+                                    if (x509.getSubjectAlternativeNames() != null) {
+                                        for (List<?> x : x509.getSubjectAlternativeNames()) {
+                                            int type = (Integer) x.get(0);
+                                            String value = (String) x.get(1);
+                                            switch (type) {
+                                                case 2: // dNSName per RFC5280 4.2.1.6
+                                                    builder.append(String.format("  subjectAlt: DNS:%s\n", value));
+                                                    break;
+                                                case 7: // iPAddress per RFC5280 4.2.1.6
+                                                    builder.append(String.format("  subjectAlt: IP:%s\n", value));
+                                                    break;
+                                                default:
+                                                    builder.append(String.format("  subjectAlt: [%d]:%s\n", type, value));
+                                                    break;
+                                            }
                                         }
                                     }
+                                } catch (CertificateParsingException e) {
+                                    builder.append(String.format("  Certificat parsing failure: %s\n", e));
                                 }
-                            } catch (CertificateParsingException e) {
-                                builder.append(String.format("  Certificat parsing failure: %s\n", e));
-                            }
-                            i++;
-                        } // for : message.getChain()
+                                i++;
+                            } // for : message.getChain()
+                        }
                     }
                     break;
             }
