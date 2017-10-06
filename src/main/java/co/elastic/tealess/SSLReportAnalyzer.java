@@ -20,13 +20,9 @@
 package co.elastic.tealess;
 
 import co.elastic.Blame;
-import co.elastic.tealess.io.IOLog;
-import co.elastic.tealess.tls.*;
 
 import javax.net.ssl.SSLParameters;
 import java.io.IOException;
-import java.nio.BufferUnderflowException;
-import java.nio.ByteBuffer;
 import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;

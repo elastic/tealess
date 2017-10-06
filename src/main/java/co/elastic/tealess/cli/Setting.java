@@ -19,7 +19,6 @@
 
 package co.elastic.tealess.cli;
 
-import co.elastic.tealess.cli.input.ArgsParser;
 import co.elastic.tealess.cli.input.InvalidValue;
 import co.elastic.tealess.cli.input.Parser;
 import co.elastic.tealess.cli.input.Validator;

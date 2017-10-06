@@ -2,7 +2,6 @@ package co.elastic.tealess;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLContextSpi;
-import javax.net.ssl.SSLSocketFactory;
 import java.security.Provider;
 
 class TealessSSLContext extends SSLContext {

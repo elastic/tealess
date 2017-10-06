@@ -5,7 +5,6 @@ import co.elastic.Resolver;
 import co.elastic.tealess.*;
 import co.elastic.tealess.cli.input.ArgsParser;
 import co.elastic.tealess.cli.input.InetSocketAddressInput;
-import co.elastic.tealess.cli.input.ParserResult;
 import co.elastic.tealess.cli.input.PathInput;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

@@ -6,13 +6,10 @@ import co.elastic.tealess.io.SocketProxy;
 import co.elastic.tealess.io.Transaction;
 import co.elastic.tealess.tls.Alert;
 import co.elastic.tealess.tls.CertificateMessage;
-import co.elastic.tealess.tls.CipherSuite;
 import co.elastic.tealess.tls.InvalidValue;
-import co.elastic.tealess.tls.ServerHello;
 import co.elastic.tealess.tls.TLSDecoder;
 import co.elastic.tealess.tls.TLSHandshake;
 import co.elastic.tealess.tls.TLSPlaintext;
-import org.apache.commons.codec.binary.Hex;
 
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSocket;

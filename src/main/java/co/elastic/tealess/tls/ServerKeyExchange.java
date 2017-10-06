@@ -1,7 +1,5 @@
 package co.elastic.tealess.tls;
 
-import java.security.Key;
-
 /**
  * Created by jls on 5/1/2017.
  */

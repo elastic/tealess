@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.util.Arrays;
 
 class TealessSSLSocketFactory extends SSLSocketFactory {
     private final SSLSocketFactory factory;
