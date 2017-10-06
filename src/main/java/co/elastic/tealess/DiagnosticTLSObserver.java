@@ -129,6 +129,7 @@ public class DiagnosticTLSObserver implements TLSObserver {
     }
 
     private static void decodeBuffer(ByteBuffer buffer, int length, StringBuilder builder) {
+        // XXX: Refactor this into
         int initial = buffer.position();
         length = Math.min(initial + length, buffer.limit()) - initial;
         while (buffer.position() < initial + length) {

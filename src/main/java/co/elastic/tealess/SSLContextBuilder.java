@@ -80,6 +80,9 @@ public class SSLContextBuilder {
 
     ctx.init(kms, tms, random);
 
+    if (cipherSuites == null) {
+      cipherSuites = ctx.getDefaultSSLParameters().getCipherSuites();
+    }
     SSLContextSpi spi = new SSLContextSpiProxy(ctx, cipherSuites);
 
     return new TealessSSLContext(new SSLContextSpiProxy(ctx, cipherSuites), null, null);
