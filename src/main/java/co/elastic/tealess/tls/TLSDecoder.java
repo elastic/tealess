@@ -1,7 +1,5 @@
 package co.elastic.tealess.tls;
 
-import co.elastic.tealess.SSLState;
-
 import java.nio.ByteBuffer;
 
 /**
@@ -15,5 +13,9 @@ public class TLSDecoder {
 
   public static TLSHandshake decodeHandshake(ByteBuffer buffer) throws InvalidValue {
     return TLSHandshake.parse(buffer);
+  }
+
+  public static Alert decodeAlert(ByteBuffer buffer) throws InvalidValue {
+      return new Alert(AlertLevel.forValue(buffer.get()), AlertDescription.forValue(buffer.get()));
   }
 }

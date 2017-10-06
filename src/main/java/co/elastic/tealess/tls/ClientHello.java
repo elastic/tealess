@@ -1,6 +1,7 @@
 package co.elastic.tealess.tls;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created by jls on 4/30/2017.
@@ -24,7 +25,7 @@ public class ClientHello extends TLSHandshake {
   }
 
   public String toString() {
-    return String.format("%s[%d cipher suites]", getClass().getSimpleName(), cipherSuites.size());
+    return String.format("%s[%d cipher suites; suites: %s]", getClass().getSimpleName(), cipherSuites.size(), cipherSuites.stream().map(CipherSuite::toString).collect(Collectors.joining(", ")));
   }
 
 }

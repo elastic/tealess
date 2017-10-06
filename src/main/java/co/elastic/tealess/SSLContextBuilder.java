@@ -36,6 +36,7 @@ public class SSLContextBuilder {
   private KeyStore keyStore;
   private SSLCertificateVerificationTracker tracker;
   private KeyManagerFactory keyManagerFactory;
+  private String[] cipherSuites = null;
 
   public void setTracker(SSLCertificateVerificationTracker tracker) {
     this.tracker = tracker;
@@ -78,11 +79,18 @@ public class SSLContextBuilder {
     logger.trace("Building SSLContext with keys:{}, trusts:{}", kms, tms);
 
     ctx.init(kms, tms, random);
-    return ctx;
+
+    SSLContextSpi spi = new SSLContextSpiProxy(ctx, cipherSuites);
+
+    return new TealessSSLContext(new SSLContextSpiProxy(ctx, cipherSuites), null, null);
   }
 
   public void setKeyManagerFactory(KeyManagerFactory keyManagerFactory) {
     this.keyManagerFactory = keyManagerFactory;
+  }
+
+  public void setCipherSuites(String[] cipherSuites) {
+    this.cipherSuites = cipherSuites;
   }
 
   public interface SSLCertificateVerificationTracker {

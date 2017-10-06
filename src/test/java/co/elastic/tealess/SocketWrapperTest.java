@@ -1,5 +1,6 @@
 package co.elastic.tealess;
 
+import co.elastic.tealess.tls.CipherSuite;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -17,6 +18,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.util.Arrays;
 
 public class SocketWrapperTest {
     final SSLContext context;
@@ -30,8 +32,12 @@ public class SocketWrapperTest {
         } catch (IOException | CertificateException | KeyStoreException | UnrecoverableKeyException e) {
             throw e;
         }
+
+        //Arrays.asList(SSLContext.getDefault().getDefaultSSLParameters().getCipherSuites()).stream().sorted().forEach(System.out::println);
+        cb.setCipherSuites(new String[]{CipherSuite.TLS_KRB5_EXPORT_WITH_DES_CBC_40_MD5.name()});
+
         try {
-            context = new SSLContextProxy(new SSLContextSpiProxy(cb.build()), null, null);
+            context = cb.build();
         } catch (KeyManagementException | KeyStoreException e) {
             throw e;
         }
@@ -49,7 +55,6 @@ public class SocketWrapperTest {
             System.out.println("Exception: " + e.getClass() + ": " + e);
         }
     }
-
 
     @Test
     public void testSocketFactory() throws NoSuchAlgorithmException {

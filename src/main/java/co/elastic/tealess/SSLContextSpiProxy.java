@@ -12,10 +12,12 @@ import java.security.KeyManagementException;
 import java.security.SecureRandom;
 
 public class SSLContextSpiProxy extends SSLContextSpi {
+    private final String[] cipherSuites;
     private SSLContext context;
 
-    public SSLContextSpiProxy(SSLContext context) {
+    public SSLContextSpiProxy(SSLContext context, String[] cipherSuites) {
         this.context = context;
+        this.cipherSuites = cipherSuites;
     }
 
     @Override
@@ -25,7 +27,7 @@ public class SSLContextSpiProxy extends SSLContextSpi {
 
     @Override
     protected SSLSocketFactory engineGetSocketFactory() {
-        return SSLSocketFactoryWrapper.wrap(context.getSocketFactory());
+        return new TealessSSLSocketFactory(context.getSocketFactory(), cipherSuites);
     }
 
     @Override

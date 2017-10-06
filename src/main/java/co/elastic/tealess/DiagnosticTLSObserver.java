@@ -4,6 +4,7 @@ import co.elastic.Blame;
 import co.elastic.tealess.io.SSLSocketProxy;
 import co.elastic.tealess.io.SocketProxy;
 import co.elastic.tealess.io.Transaction;
+import co.elastic.tealess.tls.Alert;
 import co.elastic.tealess.tls.CertificateMessage;
 import co.elastic.tealess.tls.CipherSuite;
 import co.elastic.tealess.tls.InvalidValue;
@@ -16,6 +17,7 @@ import org.apache.commons.codec.binary.Hex;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSocket;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.security.cert.Certificate;
@@ -58,20 +60,38 @@ public class DiagnosticTLSObserver implements TLSObserver {
     private void diagnoseException(Throwable cause) throws IOException {
         StringBuilder report = new StringBuilder();
 
+        Throwable x = cause;
+        do {
+            //System.out.printf("Cause: %s - %s\n", x.getClass(), x);
+            x = x.getCause();
+        } while (x != null);
+
         Throwable blame = Blame.get(cause);
         if (blame instanceof sun.security.provider.certpath.SunCertPathBuilderException) {
             report.append("The remote server provided an unknown/untrusted certificate chain, so the connection terminated by the client.\n");
             readLog(report);
-            Throwable x = cause;
-            do {
-                //System.out.printf("Cause: %s - %s\n", x.getClass(), x);
-                x = x.getCause();
-            } while (x != null);
-
             SSLHandshakeException diagnosis = new SSLHandshakeException(report.toString());
             diagnosis.initCause(cause);
             throw diagnosis;
-            //throw new SSLHandshakeException(report.toString(), cause);
+        } else if (blame instanceof SSLHandshakeException && blame.getMessage().matches("Received fatal alert: handshake_failure")) {
+            report.append("The remote server terminated our handshake attempt.\n");
+            readLog(report);
+
+            final SSLHandshakeException diagnosis;
+            try {
+                diagnosis = (SSLHandshakeException) blame.getClass().getConstructor(String.class).newInstance(report.toString());
+                diagnosis.initCause(cause);
+                throw diagnosis;
+            } catch (InstantiationException e) {
+                e.printStackTrace();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            } catch (InvocationTargetException e) {
+                e.printStackTrace();
+            } catch (NoSuchMethodException e) {
+                e.printStackTrace();
+            }
+            throw (SSLHandshakeException) blame;
         }
 
     }
@@ -109,7 +129,6 @@ public class DiagnosticTLSObserver implements TLSObserver {
                     break;
             }
         }
-
     }
 
     private static void decodeBuffer(ByteBuffer buffer, int length, StringBuilder builder) {
@@ -125,15 +144,24 @@ public class DiagnosticTLSObserver implements TLSObserver {
             }
             //System.out.println(plaintext);
 
+            ByteBuffer plainPayload = plaintext.getPayload();
             switch (plaintext.getContentType()) {
                 case ChangeCipherSpec:
-                case Alert:
                 case ApplicationData:
                     builder.append(String.format("%s\n", plaintext.getContentType()));
                     break;
+                case Alert:
+                    Alert alert;
+                    try {
+                        alert = TLSDecoder.decodeAlert(plainPayload);
+                        builder.append(String.format("%s\n", alert));
+                    } catch (InvalidValue e) {
+                        builder.append(String.format("Invalid value decoding alert: %s\n", e));
+                        return;
+                    }
+                    break;
                 case Handshake:
                     // multiple handshake messages can be contained in a single TLSPlaintext
-                    ByteBuffer plainPayload = plaintext.getPayload();
                     while (plainPayload.hasRemaining()) {
                         //System.out.println(plainPayload);
                         final TLSHandshake handshake;
@@ -143,7 +171,7 @@ public class DiagnosticTLSObserver implements TLSObserver {
                             builder.append(String.format("Invalid value decoding handshake: %s\n", e));
                             return;
                         }
-                        builder.append(String.format("Handshake message: %s || %s\n", handshake, plainPayload));
+                        builder.append(String.format("Handshake message: %s\n", handshake));
                         if (handshake instanceof CertificateMessage) {
                             CertificateMessage message = (CertificateMessage) handshake;
                             int i = 0;
@@ -169,7 +197,7 @@ public class DiagnosticTLSObserver implements TLSObserver {
                                         }
                                     }
                                 } catch (CertificateParsingException e) {
-                                    builder.append(String.format("  Certificat parsing failure: %s\n", e));
+                                    builder.append(String.format("  Certificate parsing failure: %s\n", e));
                                 }
                                 i++;
                             } // for : message.getChain()
