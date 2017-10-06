@@ -31,7 +31,6 @@ class OutputStreamObserver extends OutputStream {
 
     @Override
     public void write(byte[] b) throws IOException {
-        System.out.println("WRITE");
         try {
             stream.write(b);
         } catch (IOException e) {

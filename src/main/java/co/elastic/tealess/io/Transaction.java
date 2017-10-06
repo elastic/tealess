@@ -18,4 +18,8 @@ public class Transaction<T> {
     public static <Value> Transaction<Value> create(Operation op, Value value) {
         return new Transaction<>(op, value);
     }
+
+    public String toString() {
+        return String.format("[%s] %s bytes", op, value);
+    }
 }

@@ -5,13 +5,13 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 
-public class SocketWrapper extends AbstractSocketWrapper {
+public class SocketProxy extends AbstractSocketProxy {
     private final OutputStream outputStream;
     private final InputStream inputStream;
     private final IOException deferredOutputStreamException;
     private final IOException deferredInputStreamException;
 
-    public SocketWrapper(Socket socket, InputObserver inputObserver, OutputObserver outputObserver, ExceptionObserver exceptionObserver) {
+    public SocketProxy(Socket socket, InputObserver inputObserver, OutputObserver outputObserver, ExceptionObserver exceptionObserver) {
         super(socket);
 
         IOException deferredInputStreamException1;

@@ -1,6 +1,8 @@
 package co.elastic.tealess;
 
-import co.elastic.tealess.io.SocketWrapper;
+import co.elastic.Blame;
+import co.elastic.tealess.io.SSLSocketProxy;
+import co.elastic.tealess.io.SocketProxy;
 import co.elastic.tealess.io.Transaction;
 import co.elastic.tealess.tls.CertificateMessage;
 import co.elastic.tealess.tls.InvalidValue;
@@ -8,6 +10,9 @@ import co.elastic.tealess.tls.TLSDecoder;
 import co.elastic.tealess.tls.TLSHandshake;
 import co.elastic.tealess.tls.TLSPlaintext;
 
+import javax.net.ssl.SSLHandshakeException;
+import javax.net.ssl.SSLSocket;
+import java.io.IOException;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.security.cert.Certificate;
@@ -21,6 +26,12 @@ public class DiagnosticTLSObserver implements TLSObserver {
     private final ByteBuffer outputBuffer = ByteBuffer.allocate(16384);
 
     private final List<Transaction<?>> log = new LinkedList<>();
+//    private final List<Transaction<?>> log = new LinkedList<Transaction<?>>() {
+//        public boolean add(Transaction<?> e) {
+//            System.out.println(e);
+//            return super.add(e);
+//        }
+//    };
 
     private void recordInput(int length) {
         log.add(Transaction.create(Transaction.Operation.Input, length));
@@ -34,38 +45,54 @@ public class DiagnosticTLSObserver implements TLSObserver {
         log.add(Transaction.create(Transaction.Operation.Exception, cause));
     }
 
-    private void exception(Throwable cause) {
+    private void exception(Throwable cause) throws IOException {
         recordException(cause);
         inputBuffer.flip();
         outputBuffer.flip();
-        try {
-            diagnoseException(cause, inputBuffer);
-        } catch (InvalidValue invalidValue) {
-            invalidValue.printStackTrace();
-        }
+        diagnoseException(cause);
     }
 
-    private void diagnoseException(Throwable cause, ByteBuffer inputBuffer) throws InvalidValue {
-        System.out.println("Exception: " + cause.getClass() + ":" + cause);
+    private void diagnoseException(Throwable cause) throws IOException {
+        StringBuilder report = new StringBuilder();
 
+        Throwable blame = Blame.get(cause);
+        if (blame instanceof sun.security.provider.certpath.SunCertPathBuilderException) {
+            report.append("The remote server provided an unknown/untrusted certificate chain, so the connection terminated by the client.\n");
+            readLog(report);
+            Throwable x = cause;
+            do {
+                //System.out.printf("Cause: %s - %s\n", x.getClass(), x);
+                x = x.getCause();
+            } while (x != null);
+
+            SSLHandshakeException diagnosis = new SSLHandshakeException(report.toString());
+            diagnosis.initCause(cause);
+            throw diagnosis;
+            //throw new SSLHandshakeException(report.toString(), cause);
+        }
+
+    }
+
+    private void readLog(StringBuilder builder) {
+
+        builder.append("Here is a network log before the failure:\n");
         int inputBytes = 0, outputBytes = 0;
-
         for (Transaction<?> transaction : log) {
             int length;
             switch(transaction.op) {
                 case Input:
                     length = ((Transaction<Integer>) transaction).value;
-                    if (inputBuffer.position() < inputBytes) {
-                        System.out.println("<<< INPUT");
-                        decodeBuffer(inputBuffer, length);
+                    if (inputBuffer.position() == 0 || inputBuffer.position() < inputBytes) {
+                        builder.append("INPUT: ");
+                        decodeBuffer(inputBuffer, length, builder);
                     }
                     inputBytes += length;
                     break;
                 case Output:
                     length = ((Transaction<Integer>) transaction).value;
-                    if (outputBuffer.position() < outputBytes) {
-                        System.out.println(">>> OUTPUT");
-                        decodeBuffer(outputBuffer, length);
+                    if (outputBuffer.position() == 0 || outputBuffer.position() < outputBytes) {
+                        builder.append("OUTPUT: ");
+                        decodeBuffer(outputBuffer, length, builder);
                     }
                     outputBytes += length;
                     break;
@@ -78,29 +105,38 @@ public class DiagnosticTLSObserver implements TLSObserver {
 
     }
 
-    private static void decodeBuffer(ByteBuffer buffer, int length) throws InvalidValue {
+    private static void decodeBuffer(ByteBuffer buffer, int length, StringBuilder builder) {
         int initial = buffer.position();
         length = Math.min(initial + length, buffer.limit()) - initial;
         while (buffer.position() < initial + length) {
-            //System.out.printf("pos:%d, limit:%d -- target:%d", buffer.position(), buffer.limit(), (initial + length));
-            TLSPlaintext plaintext = TLSPlaintext.parse(buffer);
-            System.out.println(plaintext);
+            final TLSPlaintext plaintext;
+            try {
+                plaintext = TLSPlaintext.parse(buffer);
+            } catch (InvalidValue e) {
+                builder.append(String.format("Invalid value decoding handshake: %s\n", e));
+                return;
+            }
             switch (plaintext.getContentType()) {
                 case ChangeCipherSpec:
-                    System.out.println(plaintext.getContentType());
-                    break;
                 case Alert:
-                    System.out.println(plaintext.getContentType());
+                case ApplicationData:
+                    builder.append(String.format("%s\n", plaintext.getContentType()));
                     break;
                 case Handshake:
-                    TLSHandshake handshake = TLSDecoder.decodeHandshake(plaintext.getPayload());
-                    System.out.println("Handshake message: " + handshake);
+                    final TLSHandshake handshake;
+                    try {
+                        handshake = TLSDecoder.decodeHandshake(plaintext.getPayload());
+                    } catch (InvalidValue e) {
+                        builder.append(String.format("Invalid value decoding handshake: %s\n", e));
+                        return;
+                    }
+                    builder.append(String.format("Handshake message: %s\n", handshake));
                     if (handshake instanceof CertificateMessage) {
                         CertificateMessage message = (CertificateMessage) handshake;
                         int i = 0;
                         for (Certificate certificate : message.getChain()) {
                             X509Certificate x509 = (X509Certificate) certificate;
-                            System.out.printf("%d: %s\n", i, x509.getSubjectX500Principal());
+                            builder.append(String.format("%d: %s\n", i, x509.getSubjectX500Principal()));
                             try {
                                 if (x509.getSubjectAlternativeNames() != null) {
                                     for (List<?> x : x509.getSubjectAlternativeNames()) {
@@ -108,27 +144,23 @@ public class DiagnosticTLSObserver implements TLSObserver {
                                         String value = (String) x.get(1);
                                         switch (type) {
                                             case 2: // dNSName per RFC5280 4.2.1.6
-                                                System.out.printf("  subjectAlt: DNS:%s\n", value);
+                                                builder.append(String.format("  subjectAlt: DNS:%s\n", value));
                                                 break;
                                             case 7: // iPAddress per RFC5280 4.2.1.6
-                                                System.out.printf("  subjectAlt: IP:%s\n", value);
+                                                builder.append(String.format("  subjectAlt: IP:%s\n", value));
                                                 break;
                                             default:
-                                                System.out.printf("  subjectAlt: [%d]:%s\n", type, value);
+                                                builder.append(String.format("  subjectAlt: [%d]:%s\n", type, value));
                                                 break;
                                         }
                                     }
                                 }
                             } catch (CertificateParsingException e) {
-                                e.printStackTrace();
+                                builder.append(String.format("  Certificat parsing failure: %s\n", e));
                             }
                             i++;
-
-                        }
+                        } // for : message.getChain()
                     }
-                    break;
-                case ApplicationData:
-                    System.out.println(plaintext.getContentType());
                     break;
             }
         }
@@ -150,12 +182,21 @@ public class DiagnosticTLSObserver implements TLSObserver {
 
     @Override
     public Socket observeIO(Socket socket) {
-        return new SocketWrapper(socket, this::read, this::write, this::exception);
+        return new SocketProxy(socket, this::read, this::write, this::exception);
+    }
+
+    @Override
+    public SSLSocket observeIO(SSLSocket socket) {
+        return new SSLSocketProxy(socket, this::read, this::write, this::exception);
     }
 
     @Override
     public Socket observeExceptions(Socket socket) {
-        return new SocketWrapper(socket, null, null, this::exception);
+        return new SocketProxy(socket, null, null, this::exception);
     }
 
+    @Override
+    public SSLSocket observeExceptions(SSLSocket socket) {
+        return new SSLSocketProxy(socket, null, null, this::exception);
+    }
 }

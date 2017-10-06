@@ -1,19 +1,127 @@
 package co.elastic.tealess.io;
 
+import javax.net.ssl.HandshakeCompletedListener;
+import javax.net.ssl.SSLParameters;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSocket;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
-import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketException;
-import java.net.SocketImplFactory;
 import java.nio.channels.SocketChannel;
 
-class AbstractSocketWrapper extends Socket {
-    private final Socket socket;
-    AbstractSocketWrapper(Socket socket) {
+public class AbstractSSLSocketProxy extends SSLSocket {
+    private SSLSocket socket;
+
+    public AbstractSSLSocketProxy(SSLSocket socket) {
         this.socket = socket;
+    }
+
+    @Override
+    public String[] getSupportedCipherSuites() {
+        return socket.getSupportedCipherSuites();
+    }
+
+    @Override
+    public String[] getEnabledCipherSuites() {
+        return socket.getEnabledCipherSuites();
+    }
+
+    @Override
+    public void setEnabledCipherSuites(String[] strings) {
+        socket.setEnabledCipherSuites(strings);
+    }
+
+    @Override
+    public String[] getSupportedProtocols() {
+        return socket.getSupportedProtocols();
+    }
+
+    @Override
+    public String[] getEnabledProtocols() {
+        return socket.getEnabledProtocols();
+    }
+
+    @Override
+    public void setEnabledProtocols(String[] strings) {
+        socket.setEnabledProtocols(strings);
+    }
+
+    @Override
+    public SSLSession getSession() {
+        return socket.getSession();
+    }
+
+    @Override
+    public SSLSession getHandshakeSession() {
+        return socket.getHandshakeSession();
+    }
+
+    @Override
+    public void addHandshakeCompletedListener(HandshakeCompletedListener handshakeCompletedListener) {
+        socket.addHandshakeCompletedListener(handshakeCompletedListener);
+    }
+
+    @Override
+    public void removeHandshakeCompletedListener(HandshakeCompletedListener handshakeCompletedListener) {
+        socket.removeHandshakeCompletedListener(handshakeCompletedListener);
+    }
+
+    @Override
+    public void startHandshake() throws IOException {
+        socket.startHandshake();
+    }
+
+    @Override
+    public void setUseClientMode(boolean b) {
+        socket.setUseClientMode(b);
+    }
+
+    @Override
+    public boolean getUseClientMode() {
+        return socket.getUseClientMode();
+    }
+
+    @Override
+    public void setNeedClientAuth(boolean b) {
+        socket.setNeedClientAuth(b);
+    }
+
+    @Override
+    public boolean getNeedClientAuth() {
+        return socket.getNeedClientAuth();
+    }
+
+    @Override
+    public void setWantClientAuth(boolean b) {
+        socket.setWantClientAuth(b);
+    }
+
+    @Override
+    public boolean getWantClientAuth() {
+        return socket.getWantClientAuth();
+    }
+
+    @Override
+    public void setEnableSessionCreation(boolean b) {
+        socket.setEnableSessionCreation(b);
+    }
+
+    @Override
+    public boolean getEnableSessionCreation() {
+        return socket.getEnableSessionCreation();
+    }
+
+    @Override
+    public SSLParameters getSSLParameters() {
+        return socket.getSSLParameters();
+    }
+
+    @Override
+    public void setSSLParameters(SSLParameters sslParameters) {
+        socket.setSSLParameters(sslParameters);
     }
 
     @Override
@@ -214,10 +322,6 @@ class AbstractSocketWrapper extends Socket {
     @Override
     public boolean isOutputShutdown() {
         return socket.isOutputShutdown();
-    }
-
-    public static void setSocketImplFactory(SocketImplFactory fac) throws IOException {
-        Socket.setSocketImplFactory(fac);
     }
 
     @Override

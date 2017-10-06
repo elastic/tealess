@@ -1,5 +1,9 @@
 package co.elastic.tealess;
 
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.junit.Test;
 
 import javax.net.ssl.SSLContext;
@@ -8,7 +12,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -16,26 +19,36 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 
 public class SocketWrapperTest {
-    @Test
-    public void test() throws NoSuchAlgorithmException {
-        final SSLContext context;
+    final SSLContext context;
+
+    public SocketWrapperTest() throws KeyStoreException, KeyManagementException, NoSuchAlgorithmException, CertificateException, UnrecoverableKeyException, IOException {
         final SSLContextBuilder cb = new SSLContextBuilder();
         try {
             KeyStoreBuilder tb = new KeyStoreBuilder();
             tb.useKeyStore(new File("C:\\Users\\jls\\.keystore"), "foobar".toCharArray());
             cb.setTrustStore(tb.buildKeyStore());
         } catch (IOException | CertificateException | KeyStoreException | UnrecoverableKeyException e) {
-            e.printStackTrace();
-            return;
+            throw e;
         }
         try {
-            context = cb.build();
+            context = new SSLContextProxy(new SSLContextSpiProxy(cb.build()), null, null);
         } catch (KeyManagementException | KeyStoreException e) {
-            e.printStackTrace();
-            return;
+            throw e;
         }
+    }
 
-        SSLSocketFactory ssf = SSLSocketFactoryWrapper.wrap(context.getSocketFactory());
+    @Test
+    public void testApacheHTTPClient() throws IOException {
+        CloseableHttpClient client = HttpClients.custom().setSSLContext(context).build();
+        HttpGet get = new HttpGet("https://twitter.com/");
+        CloseableHttpResponse response = client.execute(get);
+        System.out.println(response.getStatusLine());
+    }
+
+
+    @Test
+    public void testSocketFactory() throws NoSuchAlgorithmException {
+        SSLSocketFactory ssf = context.getSocketFactory();
         try (Socket conn = ssf.createSocket("google.com", 443)) {
             OutputStream x = conn.getOutputStream();
             System.out.println("Stream: " + x.getClass());
@@ -51,7 +64,5 @@ public class SocketWrapperTest {
             System.out.println("Exception: " + e1);
             //e1.printStackTrace();
         }
-
-
     }
 }

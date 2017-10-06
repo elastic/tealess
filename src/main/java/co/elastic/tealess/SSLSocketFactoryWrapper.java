@@ -1,6 +1,7 @@
 package co.elastic.tealess;
 
 import javax.net.SocketFactory;
+import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -25,50 +26,48 @@ class SSLSocketFactoryWrapper extends SSLSocketFactory {
     @Override
     public Socket createSocket(Socket socket, String host, int port, boolean autoClose) throws IOException {
         TLSObserver observer = new DiagnosticTLSObserver();
-        return observer.observeExceptions(factory.createSocket(observer.observeIO(socket), host, port, autoClose));
+        return observer.observeExceptions((SSLSocket) factory.createSocket(observer.observeIO(socket), host, port, autoClose));
     }
 
     @Override
     public Socket createSocket(Socket socket, InputStream inputStream, boolean autoClose) throws IOException {
         TLSObserver observer = new DiagnosticTLSObserver();
-        return observer.observeExceptions(factory.createSocket(observer.observeIO(socket), inputStream, autoClose));
+        return observer.observeExceptions((SSLSocket) factory.createSocket(observer.observeIO(socket), inputStream, autoClose));
     }
 
     @Override
     public Socket createSocket() throws IOException {
-        Socket socket = SocketFactory.getDefault().createSocket();
         TLSObserver observer = new DiagnosticTLSObserver();
-        return observer.observeExceptions(factory.createSocket(observer.observeIO(socket), emptyInputStream, true));
+        Socket socket = SocketFactory.getDefault().createSocket();
+        return observer.observeExceptions((SSLSocket) factory.createSocket(observer.observeIO(socket), emptyInputStream, true));
     }
 
     @Override
     public Socket createSocket(String host, int port) throws IOException {
-        System.out.println("createSocket 3");
         TLSObserver observer = new DiagnosticTLSObserver();
         Socket socket = SocketFactory.getDefault().createSocket(host, port);
-        return observer.observeExceptions(factory.createSocket(observer.observeIO(socket), host, port, true));
+        return observer.observeExceptions((SSLSocket) factory.createSocket(observer.observeIO(socket), host, port, true));
     }
 
     @Override
     public Socket createSocket(String host, int port, InetAddress localAddress, int localPort) throws IOException {
-        Socket socket = SocketFactory.getDefault().createSocket(host, port, localAddress, localPort);
         TLSObserver observer = new DiagnosticTLSObserver();
-        return observer.observeExceptions(factory.createSocket(observer.observeIO(socket), host, port, true));
+        Socket socket = SocketFactory.getDefault().createSocket(host, port, localAddress, localPort);
+        return observer.observeExceptions((SSLSocket) factory.createSocket(observer.observeIO(socket), host, port, true));
     }
 
     @Override
     public Socket createSocket(InetAddress inetAddress, int port) throws IOException {
-        Socket socket = SocketFactory.getDefault().createSocket(inetAddress, port);
-        System.out.println("createSocket 5");
         TLSObserver observer = new DiagnosticTLSObserver();
-        return observer.observeExceptions(factory.createSocket(observer.observeIO(socket), inetAddress.getHostAddress(), port, true));
+        Socket socket = SocketFactory.getDefault().createSocket(inetAddress, port);
+        return observer.observeExceptions((SSLSocket) factory.createSocket(observer.observeIO(socket), inetAddress.getHostAddress(), port, true));
     }
 
     @Override
     public Socket createSocket(InetAddress inetAddress, int i, InetAddress inetAddress1, int i1) throws IOException {
-        Socket socket = SocketFactory.getDefault().createSocket(inetAddress, i, inetAddress1, i1);
         TLSObserver observer = new DiagnosticTLSObserver();
-        return observer.observeExceptions(factory.createSocket(observer.observeIO(socket), emptyInputStream, true));
+        Socket socket = SocketFactory.getDefault().createSocket(inetAddress, i, inetAddress1, i1);
+        return observer.observeExceptions((SSLSocket) factory.createSocket(observer.observeIO(socket), emptyInputStream, true));
     }
 
     static SSLSocketFactory wrap(SSLSocketFactory factory) {
