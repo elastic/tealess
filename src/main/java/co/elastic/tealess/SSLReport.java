@@ -19,7 +19,6 @@
 
 package co.elastic.tealess;
 
-import co.elastic.tealess.io.IOObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -31,7 +30,6 @@ public class SSLReport {
   private static final Logger logger = LogManager.getLogger();
 
   private Throwable exception;
-  private IOObserver ioObserver;
   private SSLContext sslContext;
   private SSLSession sslSession;
   private InetSocketAddress address;
@@ -121,11 +119,4 @@ public class SSLReport {
     return SSLContextBuilder;
   }
 
-  public IOObserver getIOObserver() {
-    return ioObserver;
-  }
-
-  public void setIOObserver(IOObserver ioObserver) {
-    this.ioObserver = ioObserver;
-  }
 }
