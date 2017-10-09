@@ -19,16 +19,17 @@
 
 package co.elastic.tealess;
 
+import co.elastic.tealess.io.ObservableSSLSocket;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.net.ssl.X509ExtendedTrustManager;
 import javax.net.ssl.X509TrustManager;
+import java.net.Socket;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
 class TrackingTrustManager extends X509ExtendedTrustManagerProxy {
-  private static final Logger logger = LogManager.getLogger();
   private final SSLContextBuilder.SSLCertificateVerificationTracker tracker;
 
   public TrackingTrustManager(X509TrustManager trustManager, SSLContextBuilder.SSLCertificateVerificationTracker tracker) {
@@ -36,24 +37,30 @@ class TrackingTrustManager extends X509ExtendedTrustManagerProxy {
     this.tracker = tracker;
   }
 
-  public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+
+  @Override
+  public void checkClientTrusted(X509Certificate[] chain, String host, Socket socket) throws CertificateException {
     try {
-      trustManager.checkServerTrusted(chain, authType);
-      logger.trace("Server trust check successful: {} @ {}", chain[0].getSubjectAlternativeNames(), authType);
-      this.tracker.track(chain, authType, null);
+      super.checkClientTrusted(chain, host, socket);
+      this.tracker.track(chain, null, null);
     } catch (CertificateException e) {
-      logger.trace("Server trust check failed: {} @ {}", chain[0].getSubjectAlternativeNames(), authType, e.getMessage());
-      this.tracker.track(chain, authType, e);
+      // XXX: Perhaps prompt if a user wants to accept?
+      this.tracker.track(chain, null, e);
       throw e;
     }
   }
 
-  public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+  @Override
+  public void checkServerTrusted(X509Certificate[] chain, String host, Socket socket) throws CertificateException {
+    // XXX: Check if Socket is an ObservableSSLSocket
+    // XXX: If it is, we can tell the socket about ourselves so that the exception handler might know more details about the failure.
+
     try {
-      trustManager.checkClientTrusted(chain, authType);
-      this.tracker.track(chain, authType, null);
+      super.checkServerTrusted(chain, host, socket);
+      this.tracker.track(chain, null, null);
     } catch (CertificateException e) {
-      this.tracker.track(chain, authType, e);
+      // XXX: Perhaps prompt if a user wants to accept?
+      this.tracker.track(chain, null, e);
       throw e;
     }
   }

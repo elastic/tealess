@@ -58,7 +58,9 @@ public class DiagnosticTLSObserver implements TLSObserver {
 
     private void diagnoseException(Throwable cause) throws IOException {
         StringBuilder report = new StringBuilder();
-        // xxx: find the correct one
+        // xxx: find the correct one.
+        // XXX: Have a way for the TrustManager to tell the socket (or this observer?) about itself so that we don't have
+        // xxx: to do this lookup (which fails if using the default trust manager on the system).
         X509ExtendedTrustManager trustManager = (X509ExtendedTrustManager) trustManagers[0];
 
         Throwable blame = Blame.get(cause);

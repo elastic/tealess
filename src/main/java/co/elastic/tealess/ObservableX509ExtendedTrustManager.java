@@ -16,8 +16,14 @@ public class ObservableX509ExtendedTrustManager extends X509ExtendedTrustManager
     }
 
     @Override
+    public void checkServerTrusted(X509Certificate[] x509Certificates, String s, Socket socket) throws CertificateException {
+        System.out.printf("checkServertTrusted: host:%s, certs:%s", s, x509Certificates);
+        super.checkServerTrusted(x509Certificates, s, socket);
+    }
+
+    @Override
     public void checkClientTrusted(X509Certificate[] x509Certificates, String s, Socket socket) throws CertificateException {
-        logger.trace("checkClientTrusted: host:{}, certs:{}", s, x509Certificates);
+        System.out.printf("checkClienttTrusted: host:%s, certs:%s", s, x509Certificates);
         super.checkClientTrusted(x509Certificates, s, socket);
     }
 }

@@ -60,6 +60,7 @@ public class SSLContextBuilder {
     }
 
     if (tracker == null) {
+      // XXX: We want a tracker per-socket so we can access this data during exception handling.
       tracker = (chain, authType, exception) -> { };
     }
 
