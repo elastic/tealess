@@ -3,12 +3,12 @@ package co.elastic.tealess.io;
 import java.io.IOException;
 import java.io.OutputStream;
 
-class OutputStreamObserver extends OutputStream {
+class ObservableOutputStream extends OutputStream {
     private final OutputStream stream;
     private final OutputObserver observer;
     private final ExceptionObserver exceptionObserver;
 
-    public OutputStreamObserver(OutputStream stream, OutputObserver observer, ExceptionObserver exceptionObserver) {
+    public ObservableOutputStream(OutputStream stream, OutputObserver observer, ExceptionObserver exceptionObserver) {
         this.stream = stream;
         this.observer = observer;
         this.exceptionObserver = exceptionObserver;

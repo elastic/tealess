@@ -1,8 +1,8 @@
 package co.elastic.tealess;
 
 import co.elastic.Blame;
-import co.elastic.tealess.io.SSLSocketProxy;
-import co.elastic.tealess.io.SocketProxy;
+import co.elastic.tealess.io.ObservableSSLSocket;
+import co.elastic.tealess.io.ObservableSocket;
 import co.elastic.tealess.io.Transaction;
 import co.elastic.tealess.tls.Alert;
 import co.elastic.tealess.tls.CertificateMessage;
@@ -13,6 +13,8 @@ import co.elastic.tealess.tls.TLSPlaintext;
 
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSocket;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509ExtendedTrustManager;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.Socket;
@@ -20,20 +22,20 @@ import java.nio.ByteBuffer;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class DiagnosticTLSObserver implements TLSObserver {
     private final ByteBuffer inputBuffer = ByteBuffer.allocate(16384);
     private final ByteBuffer outputBuffer = ByteBuffer.allocate(16384);
-
     private final List<Transaction<?>> log = new LinkedList<>();
-//    private final List<Transaction<?>> log = new LinkedList<Transaction<?>>() {
-//        public boolean add(Transaction<?> e) {
-//            System.out.println(e);
-//            return super.add(e);
-//        }
-//    };
+    private final TrustManager[] trustManagers;
+
+    public DiagnosticTLSObserver(TrustManager[] trustManagers) {
+        this.trustManagers = trustManagers;
+    }
 
     private void recordInput(int length) {
         log.add(Transaction.create(Transaction.Operation.Input, length));
@@ -56,16 +58,43 @@ public class DiagnosticTLSObserver implements TLSObserver {
 
     private void diagnoseException(Throwable cause) throws IOException {
         StringBuilder report = new StringBuilder();
-
-        Throwable x = cause;
-        do {
-            //System.out.printf("Cause: %s - %s\n", x.getClass(), x);
-            x = x.getCause();
-        } while (x != null);
+        // xxx: find the correct one
+        X509ExtendedTrustManager trustManager = (X509ExtendedTrustManager) trustManagers[0];
 
         Throwable blame = Blame.get(cause);
+
         if (blame instanceof sun.security.provider.certpath.SunCertPathBuilderException) {
+            X509Certificate[] acceptedIssuers = trustManager.getAcceptedIssuers();
             report.append("The remote server provided an unknown/untrusted certificate chain, so the connection terminated by the client.\n");
+            report.append(String.format("The local client has %d certificates in the trust store.\n", acceptedIssuers.length));
+            for (int i = 0; i < acceptedIssuers.length; i++)  {
+                try {
+                    Collection<List<?>> subjectAlternativeNames = acceptedIssuers[i].getSubjectAlternativeNames();
+                    if (subjectAlternativeNames == null) {
+                        report.append(String.format("%d: %s (no subject alternatives))\n", i, acceptedIssuers[i].getSubjectX500Principal()));
+                    } else {
+                        report.append(String.format("%d: %s (%d subject alternatives)\n", i, acceptedIssuers[i].getSubjectX500Principal()));
+                        for (List<?> x : subjectAlternativeNames) {
+                            int type = (Integer) x.get(0);
+                            String value = (String) x.get(1);
+                            switch (type) {
+                                case 2: // dNSName per RFC5280 4.2.1.6
+                                    report.append(String.format("  subjectAlt: DNS:%s\n", value));
+                                    break;
+                                case 7: // iPAddress per RFC5280 4.2.1.6
+                                    report.append(String.format("  subjectAlt: IP:%s\n", value));
+                                    break;
+                                default:
+                                    report.append(String.format("  subjectAlt: [%d]:%s\n", type, value));
+                                    break;
+                            }
+                        }
+                    }
+                } catch (CertificateParsingException e) {
+                    e.printStackTrace();
+                }
+            }
+
             readLog(report);
             SSLHandshakeException diagnosis = new SSLHandshakeException(report.toString());
             diagnosis.initCause(cause);
@@ -79,28 +108,17 @@ public class DiagnosticTLSObserver implements TLSObserver {
                 diagnosis = (SSLHandshakeException) blame.getClass().getConstructor(String.class).newInstance(report.toString());
                 diagnosis.initCause(cause);
                 throw diagnosis;
-            } catch (InstantiationException e) {
-                e.printStackTrace();
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            } catch (InvocationTargetException e) {
-                e.printStackTrace();
-            } catch (NoSuchMethodException e) {
+            } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+                // If we get here this is a major bug. All Exception classes should implement a `(String message)` constructor.
                 e.printStackTrace();
             }
             throw (SSLHandshakeException) blame;
         }
-
     }
 
     private void readLog(StringBuilder builder) {
         builder.append("Here is a network log before the failure:\n");
         int inputBytes = 0, outputBytes = 0;
-//        inputBuffer.mark();
-//        byte[] lead = new byte[inputBuffer.limit()];
-        //inputBuffer.get(lead);
-        //System.out.println(Hex.encodeHexString(lead));
-        //inputBuffer.reset();
         for (Transaction<?> transaction : log) {
             int length;
             switch(transaction.op) {
@@ -222,21 +240,21 @@ public class DiagnosticTLSObserver implements TLSObserver {
 
     @Override
     public Socket observeIO(Socket socket) {
-        return new SocketProxy(socket, this::read, this::write, this::exception);
+        return new ObservableSocket(socket, this::read, this::write, this::exception);
     }
 
     @Override
     public SSLSocket observeIO(SSLSocket socket) {
-        return new SSLSocketProxy(socket, this::read, this::write, this::exception);
+        return new ObservableSSLSocket(socket, this::read, this::write, this::exception);
     }
 
     @Override
     public Socket observeExceptions(Socket socket) {
-        return new SocketProxy(socket, null, null, this::exception);
+        return new ObservableSocket(socket, null, null, this::exception);
     }
 
     @Override
     public SSLSocket observeExceptions(SSLSocket socket) {
-        return new SSLSocketProxy(socket, null, null, this::exception);
+        return new ObservableSSLSocket(socket, null, null, this::exception);
     }
 }

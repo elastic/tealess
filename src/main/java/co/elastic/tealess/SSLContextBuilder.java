@@ -29,11 +29,9 @@ import java.util.Arrays;
 
 public class SSLContextBuilder {
   private final SecureRandom random = new SecureRandom();
-  private final String keyManagerAlgorithm = KeyManagerFactory.getDefaultAlgorithm();
   private final String trustManagerAlgorithm = TrustManagerFactory.getDefaultAlgorithm();
   private final Logger logger = LogManager.getLogger();
   private KeyStore trustStore;
-  private KeyStore keyStore;
   private SSLCertificateVerificationTracker tracker;
   private KeyManagerFactory keyManagerFactory;
   private String[] cipherSuites = null;
@@ -61,31 +59,35 @@ public class SSLContextBuilder {
         .toArray(X509KeyManager[]::new);
     }
 
+    if (tracker == null) {
+      tracker = (chain, authType, exception) -> { };
+    }
+
     if (trustStore != null) {
       System.out.println("Using custom trust store with " + trustStore.size());
       TrustManagerFactory tmf;
       tmf = TrustManagerFactory.getInstance(trustManagerAlgorithm);
       tmf.init(trustStore);
+
       // Wrap java's TrustManagers in our own so that we can track verification failures.
       tms = Arrays.stream(tmf.getTrustManagers())
-        .map((tm) -> new TrackingTrustManager((X509TrustManager) tm))
-        .map((tm) -> {
-          tm.setTracker(tracker);
-          return tm;
-        })
+        .map((tm) -> new TrackingTrustManager((X509TrustManager) tm, tracker))
         .toArray(TrustManager[]::new);
     }
 
+
     logger.trace("Building SSLContext with keys:{}, trusts:{}", kms, tms);
 
-    ctx.init(kms, tms, random);
-
     if (cipherSuites == null) {
-      cipherSuites = ctx.getDefaultSSLParameters().getCipherSuites();
+      cipherSuites = SSLContext.getDefault().getDefaultSSLParameters().getCipherSuites();
     }
-    SSLContextSpi spi = new SSLContextSpiProxy(ctx, cipherSuites);
 
-    return new TealessSSLContext(new SSLContextSpiProxy(ctx, cipherSuites), null, null);
+    SSLContextSpi spi = new TealessSSLContextSpi(ctx, cipherSuites);
+
+    SSLContext tealessContext = new TealessSSLContext(spi, null, null);
+
+    tealessContext.init(kms, tms, random);
+    return tealessContext;
   }
 
   public void setKeyManagerFactory(KeyManagerFactory keyManagerFactory) {

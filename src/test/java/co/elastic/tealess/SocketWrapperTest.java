@@ -5,6 +5,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.logging.log4j.LogManager;
 import org.junit.Test;
 
 import javax.net.ssl.SSLContext;
@@ -56,6 +57,7 @@ public class SocketWrapperTest {
             fail("Expected a " + exceptionClass + " exception, but none was thrown.");
         } catch (IOException e) {
             System.out.println(e);
+            //e.printStackTrace();
             assertEquals(e.getClass(), exceptionClass);
             Matcher matcher = messagePattern.matcher(e.getMessage());
             assertThat("Exception message, '" + e.getMessage() + "' must match " + messagePattern, matcher.matches(), is(true));

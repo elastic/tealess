@@ -22,55 +22,39 @@ package co.elastic.tealess;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.net.ssl.X509ExtendedTrustManager;
 import javax.net.ssl.X509TrustManager;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
-class TrackingTrustManager implements X509TrustManager {
+class TrackingTrustManager extends X509ExtendedTrustManagerProxy {
   private static final Logger logger = LogManager.getLogger();
-  private final X509TrustManager tm;
-  private SSLContextBuilder.SSLCertificateVerificationTracker tracker;
+  private final SSLContextBuilder.SSLCertificateVerificationTracker tracker;
 
-  public TrackingTrustManager(X509TrustManager tm) {
-    this.tm = tm;
-  }
-
-  public void setTracker(SSLContextBuilder.SSLCertificateVerificationTracker tracker) {
+  public TrackingTrustManager(X509TrustManager trustManager, SSLContextBuilder.SSLCertificateVerificationTracker tracker) {
+    super((X509ExtendedTrustManager) trustManager);
     this.tracker = tracker;
   }
 
   public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-    logger.trace("checkServerTrusted: {} @ {}", chain[0].getSubjectAlternativeNames(), authType);
     try {
-      tm.checkServerTrusted(chain, authType);
-    } catch (CertificateException e) {
-      logger.trace("Server trust check failed: {}", e.getMessage());
-      if (tracker != null) {
-        this.tracker.track(chain, authType, e);
-      }
-      throw e;
-    }
-    if (tracker != null) {
+      trustManager.checkServerTrusted(chain, authType);
+      logger.trace("Server trust check successful: {} @ {}", chain[0].getSubjectAlternativeNames(), authType);
       this.tracker.track(chain, authType, null);
+    } catch (CertificateException e) {
+      logger.trace("Server trust check failed: {} @ {}", chain[0].getSubjectAlternativeNames(), authType, e.getMessage());
+      this.tracker.track(chain, authType, e);
+      throw e;
     }
   }
 
   public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
     try {
-      tm.checkClientTrusted(chain, authType);
+      trustManager.checkClientTrusted(chain, authType);
+      this.tracker.track(chain, authType, null);
     } catch (CertificateException e) {
-      if (tracker != null) {
-        this.tracker.track(chain, authType, e);
-      }
+      this.tracker.track(chain, authType, e);
       throw e;
     }
-    if (tracker != null) {
-      this.tracker.track(chain, authType, null);
-    }
-  }
-
-  public X509Certificate[] getAcceptedIssuers() {
-    logger.trace("getAcceptedIssuers");
-    return tm.getAcceptedIssuers();
   }
 }
