@@ -1,7 +1,7 @@
 /*
  * Licensed to Elasticsearch under one or more contributor
  * license agreements. See the NOTICE file distributed with
- * this work for additional information regarding copyright
+ * this work for additional debug regarding copyright
  * ownership. Elasticsearch licenses this file to you under
  * the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ public class LoggingKeyManager extends X509ExtendedKeyManager {
 
   @Override
   public String[] getClientAliases(String keyType, Principal[] principals) {
-    logger.info("KeyManager.getClientAliases()");
+    logger.debug("KeyManager.getClientAliases()");
     return keyManager.getClientAliases(keyType, principals);
   }
 
@@ -53,14 +53,14 @@ public class LoggingKeyManager extends X509ExtendedKeyManager {
 
   @Override
   public String[] getServerAliases(String keyType, Principal[] principals) {
-    logger.info("KeyManager.getServerAliases()");
+    logger.debug("KeyManager.getServerAliases()");
     return keyManager.getServerAliases(keyType, principals);
   }
 
   @Override
   public String chooseServerAlias(String keyType, Principal[] principals, Socket socket) {
     String result = keyManager.chooseServerAlias(keyType, principals, socket);
-    logger.info("KeyManager.chooseServerAliases() => '{}'", result);
+    logger.debug("KeyManager.chooseServerAliases() => '{}'", result);
     return result;
   }
 
