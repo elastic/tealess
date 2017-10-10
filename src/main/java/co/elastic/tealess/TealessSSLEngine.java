@@ -1,5 +1,6 @@
 package co.elastic.tealess;
 
+import co.elastic.tealess.io.BufferUtil;
 import co.elastic.tealess.io.Transaction;
 
 import javax.net.ssl.SSLEngine;
@@ -40,12 +41,11 @@ public class TealessSSLEngine extends SSLEngineProxy {
         try {
             SSLEngineResult result = super.wrap(srcs, dst);
             if (!outputFull && dst.position() > 0) {
-                //System.out.printf("wrap(..., %s)\n", dst);
-                ByteBuffer dup = output.duplicate();
+
+                final ByteBuffer dup = dst.duplicate();
                 dup.position(0);
                 dup.limit(dst.position());
                 log.add(Transaction.create(Transaction.Operation.Output, dup.remaining()));
-                System.out.printf("output %s %d\n", dup, dup.remaining());
                 try {
                     output.put(dup);
                 } catch (BufferOverflowException e) {
