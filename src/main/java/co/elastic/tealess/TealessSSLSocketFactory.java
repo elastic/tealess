@@ -9,12 +9,32 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.util.Arrays;
 
 class TealessSSLSocketFactory extends SSLSocketFactory {
     private final SSLSocketFactory factory;
     private static final ByteArrayInputStream emptyInputStream = new ByteArrayInputStream(new byte[0]);
     private final String[] cipherSuites;
     private TrustManager[] trustManagers;
+
+    public TealessSSLSocketFactory(SSLSocketFactory factory, String[] cipherSuites, TrustManager[] trustManagers) {
+        this.factory = factory;
+        this.cipherSuites = cipherSuites;
+        this.trustManagers = trustManagers;
+    }
+
+    private void setEnabledCipherSuites(SSLSocket sslSocket) {
+        try {
+            sslSocket.setEnabledCipherSuites(cipherSuites);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException(e.getMessage() + ". Supported ciphersuites are: " + Arrays.asList(sslSocket.getSupportedCipherSuites()), e);
+        }
+    }
+
+    private TLSObserver newObserver() {
+        return new DiagnosticTLSObserver(trustManagers);
+    }
+
 
     @Override
     public String[] getDefaultCipherSuites() {
@@ -30,78 +50,66 @@ class TealessSSLSocketFactory extends SSLSocketFactory {
     public Socket createSocket(Socket socket, String host, int port, boolean autoClose) throws IOException {
         TLSObserver observer = newObserver();
         SSLSocket sslSocket = observer.observeExceptions((SSLSocket) factory.createSocket(observer.observeIO(socket), host, port, autoClose));
-        sslSocket.setEnabledCipherSuites(cipherSuites);
-        //Arrays.asList(sslSocket.getSupportedCipherSuites()).stream().sorted().forEach(System.out::println);
+        setEnabledCipherSuites(sslSocket);
         return sslSocket;
-    }
-
-    private TLSObserver newObserver() {
-        return new DiagnosticTLSObserver(trustManagers);
     }
 
     @Override
     public Socket createSocket(Socket socket, InputStream inputStream, boolean autoClose) throws IOException {
         TLSObserver observer = newObserver();
         SSLSocket sslSocket = observer.observeExceptions((SSLSocket) factory.createSocket(observer.observeIO(socket), inputStream, autoClose));
-        sslSocket.setEnabledCipherSuites(cipherSuites);
-        //Arrays.asList(sslSocket.getSupportedCipherSuites()).stream().sorted().forEach(System.out::println);
+        setEnabledCipherSuites(sslSocket);
         return sslSocket;
     }
 
     @Override
     public Socket createSocket() throws IOException {
-        TLSObserver observer = newObserver();
         Socket socket = SocketFactory.getDefault().createSocket();
+
+        TLSObserver observer = newObserver();
         SSLSocket sslSocket = observer.observeExceptions((SSLSocket) factory.createSocket(observer.observeIO(socket), emptyInputStream, true));
-        sslSocket.setEnabledCipherSuites(cipherSuites);
-        //Arrays.asList(sslSocket.getSupportedCipherSuites()).stream().sorted().forEach(System.out::println);
+        setEnabledCipherSuites(sslSocket);
         return sslSocket;
     }
 
     @Override
     public Socket createSocket(String host, int port) throws IOException {
-        TLSObserver observer = newObserver();
         Socket socket = SocketFactory.getDefault().createSocket(host, port);
+
+        TLSObserver observer = newObserver();
         SSLSocket sslSocket = observer.observeExceptions((SSLSocket) factory.createSocket(observer.observeIO(socket), host, port, true));
-        sslSocket.setEnabledCipherSuites(cipherSuites);
-        //Arrays.asList(sslSocket.getSupportedCipherSuites()).stream().sorted().forEach(System.out::println);
+        setEnabledCipherSuites(sslSocket);
         return sslSocket;
     }
 
     @Override
     public Socket createSocket(String host, int port, InetAddress localAddress, int localPort) throws IOException {
-        TLSObserver observer = newObserver();
         Socket socket = SocketFactory.getDefault().createSocket(host, port, localAddress, localPort);
+
+        TLSObserver observer = newObserver();
         SSLSocket sslSocket = observer.observeExceptions((SSLSocket) factory.createSocket(observer.observeIO(socket), host, port, true));
-        sslSocket.setEnabledCipherSuites(cipherSuites);
-        //Arrays.asList(sslSocket.getSupportedCipherSuites()).stream().sorted().forEach(System.out::println);
+        setEnabledCipherSuites(sslSocket);
         return sslSocket;
     }
 
     @Override
-    public Socket createSocket(InetAddress inetAddress, int port) throws IOException {
+    public Socket createSocket(InetAddress host, int port) throws IOException {
+        Socket socket = SocketFactory.getDefault().createSocket(host, port);
+
         TLSObserver observer = newObserver();
-        Socket socket = SocketFactory.getDefault().createSocket(inetAddress, port);
-        SSLSocket sslSocket = observer.observeExceptions((SSLSocket) factory.createSocket(observer.observeIO(socket), inetAddress.getHostAddress(), port, true));
-        sslSocket.setEnabledCipherSuites(cipherSuites);
-        //Arrays.asList(sslSocket.getSupportedCipherSuites()).stream().sorted().forEach(System.out::println);
+        SSLSocket sslSocket = observer.observeExceptions((SSLSocket) factory.createSocket(observer.observeIO(socket), host.getHostAddress(), port, true));
+        setEnabledCipherSuites(sslSocket);
         return sslSocket;
     }
 
     @Override
-    public Socket createSocket(InetAddress inetAddress, int i, InetAddress inetAddress1, int i1) throws IOException {
+    public Socket createSocket(InetAddress host, int port, InetAddress localAddress, int localPort) throws IOException {
+        Socket socket = SocketFactory.getDefault().createSocket(host, port, localAddress, localPort);
+
         TLSObserver observer = newObserver();
-        Socket socket = SocketFactory.getDefault().createSocket(inetAddress, i, inetAddress1, i1);
         SSLSocket sslSocket = observer.observeExceptions((SSLSocket) factory.createSocket(observer.observeIO(socket), emptyInputStream, true));
-        sslSocket.setEnabledCipherSuites(cipherSuites);
-        //Arrays.asList(sslSocket.getSupportedCipherSuites()).stream().sorted().forEach(System.out::println);
+        setEnabledCipherSuites(sslSocket);
         return sslSocket;
-    }
-
-    public TealessSSLSocketFactory(SSLSocketFactory factory, String[] cipherSuites, TrustManager[] trustManagers) {
-        this.factory = factory;
-        this.cipherSuites = cipherSuites;
-        this.trustManagers = trustManagers;
     }
 
 }
