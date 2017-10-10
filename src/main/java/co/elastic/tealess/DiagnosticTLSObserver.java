@@ -102,13 +102,14 @@ public class DiagnosticTLSObserver implements TLSObserver {
             SSLHandshakeException diagnosis = new SSLHandshakeException(report.toString());
             diagnosis.initCause(cause);
             throw diagnosis;
-        } else if (blame instanceof SSLHandshakeException && blame.getMessage().matches("Received fatal alert: handshake_failure")) {
+        } else if (blame instanceof SSLException && blame.getMessage().matches("Received fatal alert: handshake_failure")) {
+            // SSLSocket throws SSLHandshakeException, but SSLEngine throws SSLException :(
             report.append("The remote server terminated our handshake attempt.\n");
             readLog(report, log, inputBuffer, outputBuffer);
 
-            final SSLHandshakeException diagnosis;
+            final SSLException diagnosis;
             try {
-                diagnosis = (SSLHandshakeException) blame.getClass().getConstructor(String.class).newInstance(report.toString());
+                diagnosis = (SSLException) blame.getClass().getConstructor(String.class).newInstance(report.toString());
                 diagnosis.initCause(cause);
                 throw diagnosis;
             } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
