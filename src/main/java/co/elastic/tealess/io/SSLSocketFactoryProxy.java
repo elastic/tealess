@@ -1,4 +1,4 @@
-package co.elastic.tealess;
+package co.elastic.tealess.io;
 
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocketFactory;
