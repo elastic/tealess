@@ -11,11 +11,11 @@ import co.elastic.tealess.tls.TLSDecoder;
 import co.elastic.tealess.tls.TLSHandshake;
 import co.elastic.tealess.tls.TLSPlaintext;
 
+import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509ExtendedTrustManager;
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.Socket;
 import java.nio.ByteBuffer;
@@ -25,7 +25,6 @@ import java.security.cert.X509Certificate;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class DiagnosticTLSObserver implements TLSObserver {
     private final ByteBuffer inputBuffer = ByteBuffer.allocate(16384);
@@ -49,14 +48,14 @@ public class DiagnosticTLSObserver implements TLSObserver {
         log.add(Transaction.create(Transaction.Operation.Exception, cause));
     }
 
-    private void exception(Throwable cause) throws IOException {
+    private void exception(Throwable cause) throws SSLException {
         recordException(cause);
         inputBuffer.flip();
         outputBuffer.flip();
-        diagnoseException(cause);
+        diagnoseException(log, inputBuffer, outputBuffer, cause, trustManagers);
     }
 
-    private void diagnoseException(Throwable cause) throws IOException {
+    public static void diagnoseException(List<Transaction<?>> log, ByteBuffer inputBuffer, ByteBuffer outputBuffer, Throwable cause, TrustManager[] trustManagers) throws SSLException {
         StringBuilder report = new StringBuilder();
         // xxx: find the correct one.
         // XXX: Have a way for the TrustManager to tell the socket (or this observer?) about itself so that we don't have
@@ -75,7 +74,7 @@ public class DiagnosticTLSObserver implements TLSObserver {
                     if (subjectAlternativeNames == null) {
                         report.append(String.format("%d: %s (no subject alternatives))\n", i, acceptedIssuers[i].getSubjectX500Principal()));
                     } else {
-                        report.append(String.format("%d: %s (%d subject alternatives)\n", i, acceptedIssuers[i].getSubjectX500Principal()));
+                        report.append(String.format("%d: %s (%d subject alternatives)\n", i, acceptedIssuers[i].getSubjectX500Principal(), acceptedIssuers[i].getSubjectAlternativeNames().size()));
                         for (List<?> x : subjectAlternativeNames) {
                             int type = (Integer) x.get(0);
                             String value = (String) x.get(1);
@@ -97,13 +96,13 @@ public class DiagnosticTLSObserver implements TLSObserver {
                 }
             }
 
-            readLog(report);
+            readLog(report, log, inputBuffer, outputBuffer);
             SSLHandshakeException diagnosis = new SSLHandshakeException(report.toString());
             diagnosis.initCause(cause);
             throw diagnosis;
         } else if (blame instanceof SSLHandshakeException && blame.getMessage().matches("Received fatal alert: handshake_failure")) {
             report.append("The remote server terminated our handshake attempt.\n");
-            readLog(report);
+            readLog(report, log, inputBuffer, outputBuffer);
 
             final SSLHandshakeException diagnosis;
             try {
@@ -118,7 +117,7 @@ public class DiagnosticTLSObserver implements TLSObserver {
         }
     }
 
-    private void readLog(StringBuilder builder) {
+    private static void readLog(StringBuilder builder, List<Transaction<?>> log, ByteBuffer inputBuffer, ByteBuffer outputBuffer) {
         builder.append("Here is a network log before the failure:\n");
         int inputBytes = 0, outputBytes = 0;
         for (Transaction<?> transaction : log) {
