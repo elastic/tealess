@@ -9,6 +9,7 @@ import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManager;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -25,9 +26,15 @@ public class TealessSSLEngine extends SSLEngineProxy {
 
     public TealessSSLEngine(SSLEngine engine, String[] cipherSuites, TrustManager[] trustManagers) {
         super(engine);
-
         this.cipherSuites = cipherSuites;
         this.trustManagers = trustManagers;
+
+        try {
+            engine.setEnabledCipherSuites(cipherSuites);
+        } catch (IllegalArgumentException e) {
+            // Provide a more informative exception when an invalid ciphersuite is selected.
+            throw new IllegalArgumentException(e.getMessage() + ". Supported ciphersuites are: " + Arrays.asList(engine.getSupportedCipherSuites()), e);
+        }
     }
 
     private void recordOutput(ByteBuffer buffer) {
