@@ -1,5 +1,7 @@
 package co.elastic.tealess.io;
 
+import org.apache.commons.codec.binary.Hex;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
@@ -55,5 +57,16 @@ public class BufferUtil {
     byte[] data = new byte[length];
     source.get(data);
     return data;
+  }
+
+  public static void debug(ByteBuffer buffer, int length) {
+    buffer.mark();
+    try {
+      byte[] bytes = new byte[length];
+      buffer.get(bytes);
+      System.out.printf("Buffer contents[0..%d]: %s\n", length, Hex.encodeHexString(bytes));
+    } finally {
+      buffer.reset();
+    }
   }
 }
