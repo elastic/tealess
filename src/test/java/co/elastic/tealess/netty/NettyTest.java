@@ -26,6 +26,7 @@ public class NettyTest {
 
     @Test
     public void foo() throws InterruptedException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+        contextBuilder.setCipherSuites(new String[]{"FANCY"});
         SSLContext context = contextBuilder.build();
         //SSLContext context = SSLContext.getDefault();
         Bootstrap bootstrap = new Bootstrap();
