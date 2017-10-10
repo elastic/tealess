@@ -8,7 +8,9 @@ import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSessionContext;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
 import java.security.KeyManagementException;
+import java.security.KeyStore;
 import java.security.SecureRandom;
 
 public class SSLContextSpiProxy extends SSLContextSpi {

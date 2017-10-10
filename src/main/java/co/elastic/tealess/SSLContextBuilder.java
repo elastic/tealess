@@ -51,7 +51,6 @@ public class SSLContextBuilder {
   public SSLContext build() throws KeyManagementException, KeyStoreException, NoSuchAlgorithmException {
     SSLContext ctx = SSLContext.getInstance("TLS");
     KeyManager[] kms = null;
-    TrustManager[] tms = null;
 
     if (keyManagerFactory != null) {
       kms = Arrays.stream(keyManagerFactory.getKeyManagers())
@@ -61,21 +60,13 @@ public class SSLContextBuilder {
 
     if (tracker == null) {
       // XXX: We want a tracker per-socket so we can access this data during exception handling.
-      tracker = (chain, authType, exception) -> { };
+      tracker = (chain, authType, exception) -> {
+        System.out.println("Server certificate chain: " + chain);
+
+      };
     }
 
-    if (trustStore != null) {
-      System.out.println("Using custom trust store with " + trustStore.size());
-      TrustManagerFactory tmf;
-      tmf = TrustManagerFactory.getInstance(trustManagerAlgorithm);
-      tmf.init(trustStore);
-
-      // Wrap java's TrustManagers in our own so that we can track verification failures.
-      tms = Arrays.stream(tmf.getTrustManagers())
-        .map((tm) -> new TrackingTrustManager((X509TrustManager) tm, tracker))
-        .toArray(TrustManager[]::new);
-    }
-
+    TrustManager[] tms = buildTrustStore();
 
     logger.trace("Building SSLContext with keys:{}, trusts:{}", kms, tms);
 
@@ -84,11 +75,26 @@ public class SSLContextBuilder {
     }
 
     SSLContextSpi spi = new TealessSSLContextSpi(ctx, cipherSuites);
-
     SSLContext tealessContext = new TealessSSLContext(spi, null, null);
-
     tealessContext.init(kms, tms, random);
     return tealessContext;
+  }
+
+  private TrustManager[] buildTrustStore() throws NoSuchAlgorithmException, KeyStoreException {
+    TrustManagerFactory tmf;
+    tmf = TrustManagerFactory.getInstance(trustManagerAlgorithm);
+
+    if (trustStore != null) {
+      logger.trace("Using custom trust store with " + trustStore.size() + " entries");
+      tmf.init(trustStore);
+    } else {
+      logger.trace("Using system default trust store");
+      tmf.init((KeyStore) null);
+    }
+    // Wrap java's TrustManagers in our own so that we can track verification failures.
+    return Arrays.stream(tmf.getTrustManagers())
+            .map((tm) -> new TrackingTrustManager((X509TrustManager) tm, tracker))
+            .toArray(TrustManager[]::new);
   }
 
   public void setKeyManagerFactory(KeyManagerFactory keyManagerFactory) {
@@ -98,6 +104,7 @@ public class SSLContextBuilder {
   public void setCipherSuites(String[] cipherSuites) {
     this.cipherSuites = cipherSuites;
   }
+
 
   public interface SSLCertificateVerificationTracker {
     void track(X509Certificate[] chain, String authType, Throwable exception);
