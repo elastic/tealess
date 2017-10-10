@@ -68,33 +68,33 @@ public class DiagnosticTLSObserver implements TLSObserver {
             X509Certificate[] acceptedIssuers = trustManager.getAcceptedIssuers();
             report.append("The remote server provided an unknown/untrusted certificate chain, so the connection terminated by the client.\n");
             report.append(String.format("The local client has %d certificates in the trust store.\n", acceptedIssuers.length));
-            for (int i = 0; i < acceptedIssuers.length; i++)  {
-                try {
-                    Collection<List<?>> subjectAlternativeNames = acceptedIssuers[i].getSubjectAlternativeNames();
-                    if (subjectAlternativeNames == null) {
-                        report.append(String.format("%d: %s (no subject alternatives))\n", i, acceptedIssuers[i].getSubjectX500Principal()));
-                    } else {
-                        report.append(String.format("%d: %s (%d subject alternatives)\n", i, acceptedIssuers[i].getSubjectX500Principal(), acceptedIssuers[i].getSubjectAlternativeNames().size()));
-                        for (List<?> x : subjectAlternativeNames) {
-                            int type = (Integer) x.get(0);
-                            String value = (String) x.get(1);
-                            switch (type) {
-                                case 2: // dNSName per RFC5280 4.2.1.6
-                                    report.append(String.format("  subjectAlt: DNS:%s\n", value));
-                                    break;
-                                case 7: // iPAddress per RFC5280 4.2.1.6
-                                    report.append(String.format("  subjectAlt: IP:%s\n", value));
-                                    break;
-                                default:
-                                    report.append(String.format("  subjectAlt: [%d]:%s\n", type, value));
-                                    break;
-                            }
-                        }
-                    }
-                } catch (CertificateParsingException e) {
-                    e.printStackTrace();
-                }
-            }
+//            for (int i = 0; i < acceptedIssuers.length; i++)  {
+//                try {
+//                    Collection<List<?>> subjectAlternativeNames = acceptedIssuers[i].getSubjectAlternativeNames();
+//                    if (subjectAlternativeNames == null) {
+//                        report.append(String.format("%d: %s (no subject alternatives))\n", i, acceptedIssuers[i].getSubjectX500Principal()));
+//                    } else {
+//                        report.append(String.format("%d: %s (%d subject alternatives)\n", i, acceptedIssuers[i].getSubjectX500Principal(), acceptedIssuers[i].getSubjectAlternativeNames().size()));
+//                        for (List<?> x : subjectAlternativeNames) {
+//                            int type = (Integer) x.get(0);
+//                            String value = (String) x.get(1);
+//                            switch (type) {
+//                                case 2: // dNSName per RFC5280 4.2.1.6
+//                                    report.append(String.format("  subjectAlt: DNS:%s\n", value));
+//                                    break;
+//                                case 7: // iPAddress per RFC5280 4.2.1.6
+//                                    report.append(String.format("  subjectAlt: IP:%s\n", value));
+//                                    break;
+//                                default:
+//                                    report.append(String.format("  subjectAlt: [%d]:%s\n", type, value));
+//                                    break;
+//                            }
+//                        }
+//                    }
+//                } catch (CertificateParsingException e) {
+//                    e.printStackTrace();
+//                }
+//            }
 
             readLog(report, log, inputBuffer, outputBuffer);
             SSLHandshakeException diagnosis = new SSLHandshakeException(report.toString());
@@ -118,6 +118,8 @@ public class DiagnosticTLSObserver implements TLSObserver {
     }
 
     private static void readLog(StringBuilder builder, List<Transaction<?>> log, ByteBuffer inputBuffer, ByteBuffer outputBuffer) {
+        inputBuffer.flip();
+        outputBuffer.flip();
         builder.append("Here is a network log before the failure:\n");
         int inputBytes = 0, outputBytes = 0;
         for (Transaction<?> transaction : log) {
