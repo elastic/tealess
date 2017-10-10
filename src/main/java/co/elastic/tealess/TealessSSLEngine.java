@@ -30,27 +30,56 @@ public class TealessSSLEngine extends SSLEngineProxy {
         this.trustManagers = trustManagers;
     }
 
+    private void recordOutput(ByteBuffer buffer) {
+        if (!outputFull && buffer.position() > 0) {
+            final ByteBuffer dup = buffer.duplicate();
+            dup.position(0);
+            dup.limit(buffer.position());
+            log.add(Transaction.create(Transaction.Operation.Output, dup.remaining()));
+            try {
+                output.put(dup);
+            } catch (BufferOverflowException e) {
+                outputFull = true;
+            }
+        }
+    }
+
+    private void recordInput(ByteBuffer buffer) {
+        if (!inputFull && buffer.remaining() > 0) {
+            System.out.printf("input %s %d\n", buffer, buffer.remaining());
+            buffer.mark();
+            log.add(Transaction.create(Transaction.Operation.Input, buffer.remaining()));
+            try {
+                input.put(buffer);
+            } catch (BufferOverflowException e) {
+                inputFull = true;
+            } finally {
+                buffer.reset();
+            }
+        }
+    }
+
     @Override
     public SSLEngineResult wrap(ByteBuffer srcs, ByteBuffer dst) throws SSLException {
-        System.out.println("wrap1");
-        return super.wrap(srcs, dst);
+        try {
+            SSLEngineResult result = super.wrap(srcs, dst);
+            if (!outputFull) {
+                recordOutput(dst);
+            }
+            return result;
+        } catch (SSLException e) {
+            DiagnosticTLSObserver.diagnoseException(log, input, output, e, trustManagers);
+            throw e;
+        }
     }
+
 
     @Override
     public SSLEngineResult wrap(ByteBuffer[] srcs, ByteBuffer dst) throws SSLException {
         try {
             SSLEngineResult result = super.wrap(srcs, dst);
-            if (!outputFull && dst.position() > 0) {
-
-                final ByteBuffer dup = dst.duplicate();
-                dup.position(0);
-                dup.limit(dst.position());
-                log.add(Transaction.create(Transaction.Operation.Output, dup.remaining()));
-                try {
-                    output.put(dup);
-                } catch (BufferOverflowException e) {
-                    outputFull = true;
-                }
+            if (!outputFull) {
+                recordOutput(dst);
             }
             return result;
         } catch (SSLException e) {
@@ -61,25 +90,23 @@ public class TealessSSLEngine extends SSLEngineProxy {
 
     @Override
     public SSLEngineResult wrap(ByteBuffer[] srcs, int i, int i1, ByteBuffer dst) throws SSLException {
-        System.out.println("wrap3");
-        return super.wrap(srcs, i, i1, dst);
+        try {
+            SSLEngineResult result = super.wrap(srcs, i, i1, dst);
+            if (!outputFull) {
+                recordOutput(dst);
+            }
+            return result;
+        } catch (SSLException e) {
+            DiagnosticTLSObserver.diagnoseException(log, input, output, e, trustManagers);
+            throw e;
+        }
     }
 
     @Override
     public SSLEngineResult unwrap(ByteBuffer src, ByteBuffer dst) throws SSLException {
-        // unwrapping == input from remote
-        if (!inputFull && src.remaining() > 0) {
-            System.out.printf("input %s %d\n", src, src.remaining());
-            src.mark();
-            log.add(Transaction.create(Transaction.Operation.Input, src.remaining()));
-            try {
-                input.put(src);
-            } catch (BufferOverflowException e) {
-                inputFull = true;
-            }
-            src.reset();
+        if (!inputFull) {
+            recordInput(src);
         }
-
         try {
             return super.unwrap(src, dst);
         } catch (SSLException e) {
@@ -90,14 +117,28 @@ public class TealessSSLEngine extends SSLEngineProxy {
 
     @Override
     public SSLEngineResult unwrap(ByteBuffer src, ByteBuffer[] dsts) throws SSLException {
-        System.out.println("unwrap2");
-        return super.unwrap(src, dsts);
+        if (!inputFull) {
+            recordInput(src);
+        }
+        try {
+            return super.unwrap(src, dsts);
+        } catch (SSLException e) {
+            DiagnosticTLSObserver.diagnoseException(log, input, output, e, trustManagers);
+            throw e;
+        }
     }
 
     @Override
     public SSLEngineResult unwrap(ByteBuffer src, ByteBuffer[] dsts, int i, int i1) throws SSLException {
-        System.out.println("unwrap3");
-        return super.unwrap(src, dsts, i, i1);
+        if (!inputFull) {
+            recordInput(src);
+        }
+        try {
+            return super.unwrap(src, dsts, i, i1);
+        } catch (SSLException e) {
+            DiagnosticTLSObserver.diagnoseException(log, input, output, e, trustManagers);
+            throw e;
+        }
     }
 
 }
