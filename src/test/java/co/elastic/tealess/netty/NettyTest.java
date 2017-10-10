@@ -27,6 +27,7 @@ public class NettyTest {
     @Test
     public void foo() throws InterruptedException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
         SSLContext context = contextBuilder.build();
+        //SSLContext context = SSLContext.getDefault();
         Bootstrap bootstrap = new Bootstrap();
         bootstrap.group(group).channel(NioSocketChannel.class).handler(new HTTPSInitializer(context));
 

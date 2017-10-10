@@ -68,6 +68,8 @@ public class DiagnosticTLSObserver implements TLSObserver {
             X509Certificate[] acceptedIssuers = trustManager.getAcceptedIssuers();
             report.append("The remote server provided an unknown/untrusted certificate chain, so the connection terminated by the client.\n");
             report.append(String.format("The local client has %d certificates in the trust store.\n", acceptedIssuers.length));
+//            This is commented out because when using the system-default trust store, there are 100+ trusted certs and the output is *really* long.
+//            XXX: Long term, figure out how to just say "The local client is using the default system trust store" instead, then uncomment this for only custom stores.
 //            for (int i = 0; i < acceptedIssuers.length; i++)  {
 //                try {
 //                    Collection<List<?>> subjectAlternativeNames = acceptedIssuers[i].getSubjectAlternativeNames();
@@ -159,6 +161,7 @@ public class DiagnosticTLSObserver implements TLSObserver {
                 plaintext = TLSPlaintext.parse(buffer);
             } catch (InvalidValue e) {
                 builder.append(String.format("Invalid value decoding handshake: %s\n", e));
+                e.printStackTrace();
                 return;
             }
             //System.out.println(plaintext);

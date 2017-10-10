@@ -20,14 +20,12 @@ public class TealessSSLContextSpi extends SSLContextSpiProxy {
 
     @Override
     protected SSLEngine engineCreateSSLEngine() {
-        System.out.println("engineCreateSSLEngine");
         return new TealessSSLEngine(super.engineCreateSSLEngine(), cipherSuites, trustManagers);
     }
 
     @Override
     protected SSLEngine engineCreateSSLEngine(String host, int port) {
-        System.out.println("engineCreateSSLEngine2");
-        return super.engineCreateSSLEngine(host, port);
+        return new TealessSSLEngine(super.engineCreateSSLEngine(host, port), cipherSuites, trustManagers);
     }
 
     @Override

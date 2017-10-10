@@ -21,7 +21,6 @@ public class TLSHandshake {
   private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
 
   public static TLSHandshake parse(ByteBuffer buffer) throws InvalidValue {
-    //byte[] x = new byte[100]; buffer.mark(); buffer.get(x); buffer.reset(); for (byte b : x) { System.out.printf("%02x ", b); }; System.out.println();
     HandshakeType handshakeType = HandshakeType.forValue(buffer.get());
     int length = BufferUtil.readUInt24(buffer);
 
@@ -56,16 +55,7 @@ public class TLSHandshake {
   }
 
   private static TLSHandshake parseClientKeyExchange(ByteBuffer buffer, int length) {
-    System.out.println("ClientKeyExchange -- ");
-    byte[] x = new byte[buffer.limit() - buffer.position()];
-    buffer.mark();
-    buffer.get(x);
-    buffer.reset();
-    for (byte b : x) {
-      System.out.printf("%02x ", b);
-    }
-    System.out.println();
-    System.out.println();
+    // XXX: Implement parsing for this.
     byte[] kex = new byte[length];
     buffer.get(kex);
     return new ClientKeyExchange(kex);
