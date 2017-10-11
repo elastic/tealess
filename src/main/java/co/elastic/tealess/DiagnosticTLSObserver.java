@@ -64,7 +64,7 @@ public class DiagnosticTLSObserver implements TLSObserver {
 
         Throwable blame = Blame.get(cause);
 
-        if (blame instanceof sun.security.provider.certpath.SunCertPathBuilderException) {
+        if (blame.getClass().getCanonicalName() == "sun.security.provider.certpath.SunCertPathBuilderException") {
             X509Certificate[] acceptedIssuers = trustManager.getAcceptedIssuers();
             report.append("The remote server provided an unknown/untrusted certificate chain, so the connection terminated by the client.\n");
             report.append(String.format("The local client has %d certificates in the trust store.\n", acceptedIssuers.length));
