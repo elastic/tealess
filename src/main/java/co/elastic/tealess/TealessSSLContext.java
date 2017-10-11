@@ -6,7 +6,7 @@ import java.security.Provider;
 
 public class TealessSSLContext extends SSLContext {
     // required as a subclass for SSLContext
-    protected TealessSSLContext(SSLContextSpi sslContextSpi, Provider provider, String s) {
+    public TealessSSLContext(SSLContextSpi sslContextSpi, Provider provider, String s) {
         super(sslContextSpi, provider, s);
     }
 }
