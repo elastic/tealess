@@ -21,7 +21,7 @@ package co.elastic.tealess;
 
 import co.elastic.Blame;
 import co.elastic.Resolver;
-import org.apache.http.conn.ssl.DefaultHostnameVerifier;
+//import org.apache.http.conn.ssl.DefaultHostnameVerifier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -119,8 +119,8 @@ public class SSLChecker {
   }
 
   private void checkHostnameVerification(SSLReport sslReport) {
-    HostnameVerifier hv = new DefaultHostnameVerifier();
-    sslReport.setHostnameVerified(hv.verify(sslReport.getHostname(), sslReport.getSSLSession()));
+    //HostnameVerifier hv = new DefaultHostnameVerifier();
+    //sslReport.setHostnameVerified(hv.verify(sslReport.getHostname(), sslReport.getSSLSession()));
   }
 
   private void checkConnect(SSLReport sslReport, Socket socket, int timeout) {

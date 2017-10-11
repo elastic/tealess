@@ -24,8 +24,8 @@ import co.elastic.tealess.cli.environment.CipherSuite;
 import co.elastic.tealess.cli.environment.Protocol;
 import co.elastic.tealess.cli.input.ArgsParser;
 import co.elastic.tealess.cli.input.ParserResult;
-import io.netty.handler.ssl.OpenSsl;
-import io.netty.util.Version;
+//import io.netty.handler.ssl.OpenSsl;
+//import io.netty.util.Version;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -54,17 +54,17 @@ public class EnvironmentCommand implements Command {
 
     List<String> javaAllCiphers = Arrays.asList(engine.getSupportedCipherSuites());
     List<String> javaEnabledCiphers = Arrays.asList(engine.getEnabledCipherSuites());
-    List<String> tcnativeCiphers = new ArrayList<>(OpenSsl.availableJavaCipherSuites());
+    //List<String> tcnativeCiphers = new ArrayList<>(OpenSsl.availableJavaCipherSuites());
 
     Set<String> ciphers = new TreeSet<>();
     ciphers.addAll(javaAllCiphers);
-    ciphers.addAll(tcnativeCiphers);
+//    ciphers.addAll(tcnativeCiphers);
 
     ciphers.stream().sorted().forEach(suite -> {
       boolean enabled = javaEnabledCiphers.contains(suite);
       boolean java = javaAllCiphers.contains(suite);
-      boolean tcnative = tcnativeCiphers.contains(suite);
-      suites.add(new CipherSuite(suite, enabled, java, tcnative));
+//      boolean tcnative = tcnativeCiphers.contains(suite);
+//      suites.add(new CipherSuite(suite, enabled, java, tcnative));
     });
     return suites;
   }
@@ -107,20 +107,20 @@ public class EnvironmentCommand implements Command {
   }
 
   private void showNettyDetails() {
-    if (OpenSsl.isAvailable()) {
-      System.out.printf("Netty OpenSSL support is available.\n");
-    } else {
-      Throwable e = OpenSsl.unavailabilityCause();
-      System.out.printf("Netty's OpenSSL layer could not be loaded: %s\n", e.getMessage());
-    }
+//    if (OpenSsl.isAvailable()) {
+//      System.out.printf("Netty OpenSSL support is available.\n");
+//    } else {
+//      Throwable e = OpenSsl.unavailabilityCause();
+//      System.out.printf("Netty's OpenSSL layer could not be loaded: %s\n", e.getMessage());
+//    }
 
-    System.out.println("Netty details:");
-    Map<String, Version> nettyComponents = Version.identify();
-    Version.identify().forEach((k, v) -> {
-      if (k.contains("tcnative")) {
-        System.out.printf("  %s\n", v);
-      }
-    });
+//    System.out.println("Netty details:");
+//    Map<String, Version> nettyComponents = Version.identify();
+//    Version.identify().forEach((k, v) -> {
+//      if (k.contains("tcnative")) {
+//        System.out.printf("  %s\n", v);
+//      }
+//    });
 
 
   }

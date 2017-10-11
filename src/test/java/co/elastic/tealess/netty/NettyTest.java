@@ -1,6 +1,7 @@
 package co.elastic.tealess.netty;
 
 import co.elastic.tealess.SSLContextBuilder;
+import co.elastic.tealess.tls.CipherSuite;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -26,7 +27,8 @@ public class NettyTest {
 
     @Test
     public void foo() throws InterruptedException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
-        contextBuilder.setCipherSuites(new String[]{"FANCY"});
+        //contextBuilder.setCipherSuites(new String[]{"FANCY"});
+        contextBuilder.setCipherSuites(new String[]{"TLS_KRB5_EXPORT_WITH_DES_CBC_40_SHA"});
         SSLContext context = contextBuilder.build();
         //SSLContext context = SSLContext.getDefault();
         Bootstrap bootstrap = new Bootstrap();
