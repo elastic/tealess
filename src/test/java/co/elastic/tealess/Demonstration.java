@@ -9,11 +9,14 @@ import org.junit.Test;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManagerFactory;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.security.KeyManagementException;
+import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
@@ -22,7 +25,15 @@ import java.security.cert.CertificateException;
 import static org.junit.Assert.fail;
 
 public class Demonstration {
-    final SSLContextBuilder contextBuilder = new SSLContextBuilder();
+    private final SSLContextBuilder contextBuilder = new SSLContextBuilder();
+    private SSLContext defaultContext;
+
+    private TrustManagerFactory tmf;
+
+    public Demonstration() throws NoSuchAlgorithmException {
+        tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        defaultContext = SSLContext.getInstance("TLS");
+    }
 
     @Test
     public void ancientCipher() throws IOException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
@@ -44,6 +55,20 @@ public class Demonstration {
             tryHTTP(context);
         } catch (IOException e) {
             System.out.println(e.getMessage());
+        }
+    }
+
+    @Test
+    public void defaultSSLContextUntrustedCertificate() throws IOException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, CertificateException, UnrecoverableKeyException {
+        String keystorePath = SocketWrapperTest.class.getClassLoader().getResource("keystore.jks").getPath();
+        KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
+        ks.load(new FileInputStream(keystorePath), "garbage".toCharArray());
+        tmf.init(ks);
+        defaultContext.init(null, tmf.getTrustManagers(), null);
+        try {
+            tryHTTP(defaultContext);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
