@@ -28,15 +28,19 @@ public class NettyTest {
     @Test
     public void foo() throws InterruptedException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
         //contextBuilder.setCipherSuites(new String[]{"FANCY"});
-        contextBuilder.setCipherSuites(new String[]{"TLS_KRB5_EXPORT_WITH_DES_CBC_40_SHA"});
-        SSLContext context = contextBuilder.build();
-        //SSLContext context = SSLContext.getDefault();
+        //contextBuilder.setCipherSuites(new String[]{"TLS_KRB5_EXPORT_WITH_DES_CBC_40_SHA"});
+        //SSLContext context = contextBuilder.build();
+        SSLContext context = SSLContext.getDefault();
         Bootstrap bootstrap = new Bootstrap();
         bootstrap.group(group).channel(NioSocketChannel.class).handler(new HTTPSInitializer(context));
 
-        ChannelFuture future = bootstrap.connect("192.168.1.205", 9200);
+        ChannelFuture future = bootstrap.connect("www.twitter.com", 80);
+        System.out.println("1");
         Channel channel = future.sync().channel();
-        channel.writeAndFlush("GET / HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        System.out.println("2");
+        channel.writeAndFlush("GET / HTTP/1.1\r\nHost: www.twitter.com\r\n\r\n");
+        System.out.println("GET / HTTP/1.1\r\nHost: www.twitter.com\r\n\r\n");
+        System.out.println("3");
         channel.closeFuture().sync();
     }
 }

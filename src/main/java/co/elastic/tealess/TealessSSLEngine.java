@@ -75,7 +75,7 @@ public class TealessSSLEngine extends SSLEngineProxy {
             }
             return result;
         } catch (SSLException e) {
-            DiagnosticTLSObserver.diagnoseException(log, input, output, e, trustManagers);
+            diagnose(e);
             throw e;
         }
     }
@@ -104,7 +104,7 @@ public class TealessSSLEngine extends SSLEngineProxy {
             }
             return result;
         } catch (SSLException e) {
-            DiagnosticTLSObserver.diagnoseException(log, input, output, e, trustManagers);
+            diagnose(e);
             throw e;
         }
     }
@@ -117,7 +117,7 @@ public class TealessSSLEngine extends SSLEngineProxy {
         try {
             return super.unwrap(src, dst);
         } catch (SSLException e) {
-            DiagnosticTLSObserver.diagnoseException(log, input, output, e, trustManagers);
+            diagnose(e);
             throw e;
         }
     }
@@ -130,7 +130,7 @@ public class TealessSSLEngine extends SSLEngineProxy {
         try {
             return super.unwrap(src, dsts);
         } catch (SSLException e) {
-            DiagnosticTLSObserver.diagnoseException(log, input, output, e, trustManagers);
+            diagnose(e);
             throw e;
         }
     }
@@ -143,9 +143,14 @@ public class TealessSSLEngine extends SSLEngineProxy {
         try {
             return super.unwrap(src, dsts, i, i1);
         } catch (SSLException e) {
-            DiagnosticTLSObserver.diagnoseException(log, input, output, e, trustManagers);
+            diagnose(e);
             throw e;
         }
     }
 
+    private void diagnose(SSLException e) throws SSLException {
+        input.flip();
+        output.flip();
+        DiagnosticTLSObserver.diagnoseException(log, input, output, e, trustManagers);
+    }
 }

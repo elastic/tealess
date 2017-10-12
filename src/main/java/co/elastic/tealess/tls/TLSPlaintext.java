@@ -6,7 +6,7 @@ import java.nio.ByteOrder;
 /**
  * Created by jls on 4/13/2017.
  */
-public class TLSPlaintext {
+public class TLSPlaintext implements TLSMessage {
   private final ByteBuffer payload;
 
   private ContentType contentType;

@@ -1,6 +1,6 @@
 package co.elastic.tealess.tls;
 
-public class Alert {
+public class Alert implements TLSMessage {
     private final AlertLevel alertLevel;
     private final AlertDescription alertDescription;
 

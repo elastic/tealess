@@ -14,7 +14,31 @@ public class ClientHello extends TLSHandshake {
   private final List<Byte> compressionMethods;
   private final byte[] extensionData;
 
-  public ClientHello(Version version, Random random, byte[] session, List<CipherSuite> cipherSuites, List<Byte> compressionMethods, byte[] extensionData) {
+    public Version getVersion() {
+        return version;
+    }
+
+    public Random getRandom() {
+        return random;
+    }
+
+    public byte[] getSession() {
+        return session;
+    }
+
+    public List<CipherSuite> getCipherSuites() {
+        return cipherSuites;
+    }
+
+    public List<Byte> getCompressionMethods() {
+        return compressionMethods;
+    }
+
+    public byte[] getExtensionData() {
+        return extensionData;
+    }
+
+    public ClientHello(Version version, Random random, byte[] session, List<CipherSuite> cipherSuites, List<Byte> compressionMethods, byte[] extensionData) {
     super();
     this.version = version;
     this.random = random;
@@ -25,7 +49,7 @@ public class ClientHello extends TLSHandshake {
   }
 
   public String toString() {
-    return String.format("%s[%d cipher suites; suites: %s]", getClass().getSimpleName(), cipherSuites.size(), cipherSuites.stream().map(CipherSuite::toString).collect(Collectors.joining(", ")));
+    return String.format("%s[version: %s, %d cipher suites; suites: %s]", getClass().getSimpleName(), version, cipherSuites.size(), cipherSuites.stream().map(CipherSuite::toString).collect(Collectors.joining(", ")));
   }
 
 }

@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 
-public class TLSHandshake {
+public class TLSHandshake implements TLSMessage {
   private static final Logger logger = LogManager.getLogger();
   private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
 

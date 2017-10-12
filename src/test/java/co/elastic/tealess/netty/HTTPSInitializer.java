@@ -1,8 +1,10 @@
 
 package co.elastic.tealess.netty;
 
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpContentCompressor;
 import io.netty.handler.codec.http.HttpRequestDecoder;
@@ -27,10 +29,17 @@ class HTTPSInitializer extends ChannelInitializer<SocketChannel> {
         SSLEngine engine = context.createSSLEngine();
         engine.setUseClientMode(true);
         SslHandler sslHandler = new SslHandler(engine);
-        pipeline.addLast(sslHandler);
-        pipeline.addLast(new HttpRequestDecoder());
-        pipeline.addLast(new HttpResponseEncoder());
-        pipeline.addLast(new HttpContentCompressor());
-        pipeline.addLast(new HTTPClientHandler());
+        //pipeline.addLast(sslHandler);
+        pipeline.addLast(new SimpleChannelInboundHandler<Object>() {
+
+            @Override
+            protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
+                System.out.println(msg);
+            }
+        });
+        //pipeline.addLast(new HttpRequestDecoder());
+        //pipeline.addLast(new HttpResponseEncoder());
+        //pipeline.addLast(new HttpContentCompressor());
+        //pipeline.addLast(new HTTPClientHandler());
     }
 }

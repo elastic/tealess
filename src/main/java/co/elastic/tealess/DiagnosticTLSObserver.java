@@ -6,10 +6,13 @@ import co.elastic.tealess.io.ObservableSocket;
 import co.elastic.tealess.io.Transaction;
 import co.elastic.tealess.tls.Alert;
 import co.elastic.tealess.tls.CertificateMessage;
+import co.elastic.tealess.tls.ClientHello;
 import co.elastic.tealess.tls.InvalidValue;
 import co.elastic.tealess.tls.TLSDecoder;
 import co.elastic.tealess.tls.TLSHandshake;
+import co.elastic.tealess.tls.TLSMessage;
 import co.elastic.tealess.tls.TLSPlaintext;
+import com.sun.org.apache.xpath.internal.operations.Bool;
 
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLHandshakeException;
@@ -22,9 +25,10 @@ import java.nio.ByteBuffer;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class DiagnosticTLSObserver implements TLSObserver {
     private final ByteBuffer inputBuffer = ByteBuffer.allocate(16384);
@@ -55,6 +59,10 @@ public class DiagnosticTLSObserver implements TLSObserver {
         diagnoseException(log, inputBuffer, outputBuffer, cause, trustManagers);
     }
 
+    private static String formatLog(List<Transaction<TLSMessage>> log) {
+        return log.stream().map(m -> String.format("  %s", m)).collect(Collectors.joining("\n"));
+    }
+
     public static void diagnoseException(List<Transaction<?>> log, ByteBuffer inputBuffer, ByteBuffer outputBuffer, Throwable cause, TrustManager[] trustManagers) throws SSLException {
         StringBuilder report = new StringBuilder();
         // xxx: find the correct one.
@@ -63,11 +71,10 @@ public class DiagnosticTLSObserver implements TLSObserver {
         X509ExtendedTrustManager trustManager = (X509ExtendedTrustManager) trustManagers[0];
 
         Throwable blame = Blame.get(cause);
-
         if (blame.getClass().getCanonicalName() == "sun.security.provider.certpath.SunCertPathBuilderException") {
             X509Certificate[] acceptedIssuers = trustManager.getAcceptedIssuers();
             report.append("The remote server provided an unknown/untrusted certificate chain, so the connection terminated by the client.\n");
-            report.append(String.format("The local client has %d certificates in the trust store.\n", acceptedIssuers.length));
+            report.append(String.format("  The local client has %d certificates in the trust store.\n", acceptedIssuers.length));
 //            This is commented out because when using the system-default trust store, there are 100+ trusted certs and the output is *really* long.
 //            XXX: Long term, figure out how to just say "The local client is using the default system trust store" instead, then uncomment this for only custom stores.
 //            for (int i = 0; i < acceptedIssuers.length; i++)  {
@@ -98,20 +105,30 @@ public class DiagnosticTLSObserver implements TLSObserver {
 //                }
 //            }
 
-            readLog(report, log, inputBuffer, outputBuffer);
+            List<Transaction<TLSMessage>> messageLog = readLog(log, inputBuffer, outputBuffer);
+            report.append("Here is a network log prior to the handshake failure:\n");
+            report.append(formatLog(messageLog));
             SSLHandshakeException diagnosis = new SSLHandshakeException(report.toString());
             diagnosis.initCause(cause);
             throw diagnosis;
         } else if (blame instanceof SSLException) {
             // SSLSocket throws SSLHandshakeException, but SSLEngine throws SSLException :(
-
             if (blame.getMessage().matches("Received fatal alert: handshake_failure")) {
-                report.append("The remote server terminated our handshake attempt.\n");
+                report.append("Problem: The remote server terminated our handshake attempt.\n");
+
+                List<Transaction<TLSMessage>> messageLog = readLog(log, inputBuffer, outputBuffer);
+                if ((messageLog.size() == 2) && (messageLog.get(0).op == Transaction.Operation.Output) && (messageLog.get(0).value instanceof ClientHello) && (messageLog.get(1).value instanceof Alert)) {
+                    ClientHello message = (ClientHello) messageLog.get(0).value;
+                    report.append(String.format("  Diagnosis: This can occur for a variety of reasons:\n"));
+                    report.append(String.format("  1) Maybe server rejected our SSL/TLS version? We provided: %s\n", message.getVersion()));
+                    report.append(String.format("  2) Or, Server rejected all of our ciphersuites? We provided: %s\n", message.getCipherSuites()));
+                }
+                report.append("Here is a network log prior to the handshake failure:\n");
+                report.append(formatLog(messageLog));
             } else if (blame.getMessage().matches("Received fatal alert: unknown_ca")) {
-                report.append("The remote aborted the connection because it doesn't trust our provided certificate.");
+                report.append("Problem remote aborted the connection because it doesn't trust our provided certificate.");
             }
 
-            readLog(report, log, inputBuffer, outputBuffer);
             final SSLException diagnosis;
             try {
                 diagnosis = (SSLException) blame.getClass().getConstructor(String.class).newInstance(report.toString());
@@ -125,39 +142,42 @@ public class DiagnosticTLSObserver implements TLSObserver {
         }
     }
 
-    private static void readLog(StringBuilder builder, List<Transaction<?>> log, ByteBuffer inputBuffer, ByteBuffer outputBuffer) {
-        inputBuffer.flip();
-        outputBuffer.flip();
-        builder.append("Here is a network log before the failure:\n");
+    private static List<Transaction<TLSMessage>> readLog(List<Transaction<?>> log, ByteBuffer inputBuffer, ByteBuffer outputBuffer) {
+        List<Transaction<TLSMessage>> messageLog = new LinkedList<>();
+
+//        builder.append("Here is a network log before the failure:\n");
         int inputBytes = 0, outputBytes = 0;
         for (Transaction<?> transaction : log) {
             int length;
             switch(transaction.op) {
                 case Input:
+//                    builder.append(String.format("  [%s] ", transaction.op));
                     length = ((Transaction<Integer>) transaction).value;
                     if (inputBuffer.position() == 0 || inputBuffer.position() < inputBytes) {
-                        builder.append("INPUT: ");
-                        decodeBuffer(inputBuffer, length, builder);
+                        decodeBuffer(inputBuffer, length, (message) -> messageLog.add(Transaction.create(Transaction.Operation.Input, message)));
                     }
                     inputBytes += length;
                     break;
                 case Output:
+//                    builder.append(String.format("  [%s] ", transaction.op));
                     length = ((Transaction<Integer>) transaction).value;
                     if (outputBuffer.position() == 0 || outputBuffer.position() < outputBytes) {
-                        builder.append("OUTPUT: ");
-                        decodeBuffer(outputBuffer, length, builder);
+                        decodeBuffer(outputBuffer, length, (message) -> messageLog.add(Transaction.create(Transaction.Operation.Output, message)));
                     }
                     outputBytes += length;
                     break;
                 case Exception:
+//                    builder.append(String.format("  [%s] %s\n", transaction.op, transaction.value));
                     //Throwable cause = ((Transaction<Throwable>)transaction).value;
                     //System.out.println("Terminating exception: " + cause.getClass() + ": " + cause);
                     break;
             }
         }
+
+        return messageLog;
     }
 
-    private static void decodeBuffer(ByteBuffer buffer, int length, StringBuilder builder) {
+    private static void decodeBuffer(ByteBuffer buffer, int length, Function<TLSMessage, Boolean> handler) {
         // XXX: Refactor this into
         int initial = buffer.position();
         length = Math.min(initial + length, buffer.limit()) - initial;
@@ -166,25 +186,27 @@ public class DiagnosticTLSObserver implements TLSObserver {
             try {
                 plaintext = TLSPlaintext.parse(buffer);
             } catch (InvalidValue e) {
-                builder.append(String.format("Invalid value decoding handshake: %s\n", e));
+//                builder.append(String.format("Invalid value decoding handshake: %s\n", e));
                 e.printStackTrace();
                 return;
             }
-            //System.out.println(plaintext);
 
             ByteBuffer plainPayload = plaintext.getPayload();
             switch (plaintext.getContentType()) {
                 case ChangeCipherSpec:
                 case ApplicationData:
-                    builder.append(String.format("%s\n", plaintext.getContentType()));
+                    handler.apply(plaintext);
+//                    builder.append(String.format("%s\n", plaintext.getContentType()));
                     break;
                 case Alert:
                     Alert alert;
                     try {
                         alert = TLSDecoder.decodeAlert(plainPayload);
-                        builder.append(String.format("%s\n", alert));
+                        handler.apply(alert);
+//                        builder.append(String.format("%s\n", alert));
                     } catch (InvalidValue e) {
-                        builder.append(String.format("Invalid value decoding alert: %s\n", e));
+//                        builder.append(String.format("Invalid value decoding alert: %s\n", e));
+                        e.printStackTrace();
                         return;
                     }
                     break;
@@ -196,40 +218,42 @@ public class DiagnosticTLSObserver implements TLSObserver {
                         try {
                             handshake = TLSDecoder.decodeHandshake(plainPayload);
                         } catch (InvalidValue e) {
-                            builder.append(String.format("Invalid value decoding handshake: %s\n", e));
+//                            builder.append(String.format("Invalid value decoding handshake: %s\n", e));
+                            e.printStackTrace();
                             return;
                         }
-                        builder.append(String.format("Handshake message: %s\n", handshake));
-                        if (handshake instanceof CertificateMessage) {
-                            CertificateMessage message = (CertificateMessage) handshake;
-                            int i = 0;
-                            for (Certificate certificate : message.getChain()) {
-                                X509Certificate x509 = (X509Certificate) certificate;
-                                builder.append(String.format("%d: %s\n", i, x509.getSubjectX500Principal()));
-                                try {
-                                    if (x509.getSubjectAlternativeNames() != null) {
-                                        for (List<?> x : x509.getSubjectAlternativeNames()) {
-                                            int type = (Integer) x.get(0);
-                                            String value = (String) x.get(1);
-                                            switch (type) {
-                                                case 2: // dNSName per RFC5280 4.2.1.6
-                                                    builder.append(String.format("  subjectAlt: DNS:%s\n", value));
-                                                    break;
-                                                case 7: // iPAddress per RFC5280 4.2.1.6
-                                                    builder.append(String.format("  subjectAlt: IP:%s\n", value));
-                                                    break;
-                                                default:
-                                                    builder.append(String.format("  subjectAlt: [%d]:%s\n", type, value));
-                                                    break;
-                                            }
-                                        }
-                                    }
-                                } catch (CertificateParsingException e) {
-                                    builder.append(String.format("  Certificate parsing failure: %s\n", e));
-                                }
-                                i++;
-                            } // for : message.getChain()
-                        }
+                        handler.apply(handshake);
+//                        builder.append(String.format("%s\n", handshake));
+//                        if (handshake instanceof CertificateMessage) {
+//                            CertificateMessage message = (CertificateMessage) handshake;
+//                            int i = 0;
+//                            for (Certificate certificate : message.getChain()) {
+//                                X509Certificate x509 = (X509Certificate) certificate;
+//                                builder.append(String.format("%d: %s\n", i, x509.getSubjectX500Principal()));
+//                                try {
+//                                    if (x509.getSubjectAlternativeNames() != null) {
+//                                        for (List<?> x : x509.getSubjectAlternativeNames()) {
+//                                            int type = (Integer) x.get(0);
+//                                            String value = (String) x.get(1);
+//                                            switch (type) {
+//                                                case 2: // dNSName per RFC5280 4.2.1.6
+//                                                    builder.append(String.format("  subjectAlt: DNS:%s\n", value));
+//                                                    break;
+//                                                case 7: // iPAddress per RFC5280 4.2.1.6
+//                                                    builder.append(String.format("  subjectAlt: IP:%s\n", value));
+//                                                    break;
+//                                                default:
+//                                                    builder.append(String.format("  subjectAlt: [%d]:%s\n", type, value));
+//                                                    break;
+//                                            }
+//                                        }
+//                                    }
+//                                } catch (CertificateParsingException e) {
+//                                    builder.append(String.format("  Certificate parsing failure: %s\n", e));
+//                                }
+//                                i++;
+//                            } // for : message.getChain()
+//                        }
                     }
                     break;
             }
