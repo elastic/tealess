@@ -1,7 +1,5 @@
 package co.elastic.tealess.cli;
 
-import co.elastic.tealess.Bug;
-import co.elastic.tealess.Resolver;
 import co.elastic.tealess.*;
 import co.elastic.tealess.cli.beats.MapUtil;
 import co.elastic.tealess.cli.input.ArgsParser;
@@ -35,10 +33,9 @@ import java.util.stream.Collectors;
 public class BeatsCommand implements Command {
   private static final Logger logger = LogManager.getLogger();
   private static final String DESCRIPTION = "Test TLS settings from an Elastic Beats configuration.";
-  private Path settingsPath = null;
-
   // Beats output configuration sections to analyze.
   private final String[] outputs = { "logstash", "elasticsearch", "redis", "kafka" };
+  private Path settingsPath = null;
 
   public void setSettingsPath(Path path) {
     settingsPath = path;
@@ -94,7 +91,7 @@ public class BeatsCommand implements Command {
     SSLChecker checker;
     try {
       checker = new SSLChecker(cb);
-    } catch (KeyManagementException | KeyStoreException | NoSuchAlgorithmException | UnrecoverableKeyException e) {
+    } catch (KeyManagementException | KeyStoreException | NoSuchAlgorithmException e) {
       throw new ConfigurationProblem("Failed to build tealess context.", e);
     }
 

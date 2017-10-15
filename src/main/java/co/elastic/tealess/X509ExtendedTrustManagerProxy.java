@@ -1,8 +1,5 @@
 package co.elastic.tealess;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.X509ExtendedTrustManager;
 import java.net.Socket;
@@ -10,7 +7,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
 public class X509ExtendedTrustManagerProxy extends X509ExtendedTrustManager {
-    protected X509ExtendedTrustManager trustManager;
+    protected final X509ExtendedTrustManager trustManager;
 
     public X509ExtendedTrustManagerProxy(X509ExtendedTrustManager trustManager) {
         this.trustManager = trustManager;

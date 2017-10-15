@@ -10,7 +10,6 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.ServerSocketChannel;
-import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.ssl.SslHandler;
@@ -18,12 +17,10 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.net.ssl.*;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketAddress;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.KeyManagementException;
@@ -41,14 +38,8 @@ public class ServerCommand implements Command {
     private static final String DESCRIPTION = "Connect to an address with SSL/TLS and diagnose the result.";
     private final KeyStoreBuilder keys;
     private final KeyStoreBuilder trust;
-
-    private void setAddress(InetSocketAddress address) {
-        this.address = address;
-    }
-
-    private Path keyStore = null;
+    private final Path keyStore = null;
     private InetSocketAddress address = null;
-
     public ServerCommand() throws Bug {
         try {
             keys = new KeyStoreBuilder();
@@ -56,6 +47,10 @@ public class ServerCommand implements Command {
         } catch (IOException | CertificateException | KeyStoreException | NoSuchAlgorithmException | UnrecoverableKeyException e) {
             throw new Bug("'new KeyStoreBuilder' failed", e);
         }
+    }
+
+    private void setAddress(InetSocketAddress address) {
+        this.address = address;
     }
 
     private void setCAPath(Path path) throws CertificateException, KeyStoreException, IOException {

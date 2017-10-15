@@ -1,6 +1,5 @@
 package co.elastic.tealess;
 
-import co.elastic.tealess.io.BufferUtil;
 import co.elastic.tealess.io.Transaction;
 
 import javax.net.ssl.SSLEngine;

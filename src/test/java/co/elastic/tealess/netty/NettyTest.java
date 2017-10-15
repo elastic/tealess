@@ -1,7 +1,6 @@
 package co.elastic.tealess.netty;
 
 import co.elastic.tealess.SSLContextBuilder;
-import co.elastic.tealess.tls.CipherSuite;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -17,8 +16,8 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 
 public class NettyTest {
-    private EventLoopGroup group = new NioEventLoopGroup();
     final SSLContextBuilder contextBuilder = new SSLContextBuilder();
+    private final EventLoopGroup group = new NioEventLoopGroup();
 
     @After
     public void terminate() {

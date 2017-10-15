@@ -67,7 +67,7 @@ public class TLSHandshake implements TLSMessage {
     return new HelloRequest();
   }
 
-  private static TLSHandshake parseServerKeyExchange(ByteBuffer buffer, int length) throws InvalidValue {
+  private static TLSHandshake parseServerKeyExchange(ByteBuffer buffer, int length) {
     // Skip the key exchange details itself because I don't need this information yet
     // and it is a pretty complicated structure.
     buffer.position(buffer.position() + length);

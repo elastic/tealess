@@ -15,7 +15,7 @@ enum HandshakeType {
   ClientKeyExchange((byte) 16),
   Finished((byte) 20);
 
-  private byte type;
+    private final byte type;
 
   HandshakeType(byte type) {
     this.type = type;

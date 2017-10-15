@@ -15,14 +15,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.security.KeyManagementException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
+import java.security.*;
 import java.security.cert.CertificateException;
-
-import static org.junit.Assert.fail;
 
 public class Demonstration {
     private final SSLContextBuilder contextBuilder = new SSLContextBuilder();

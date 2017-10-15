@@ -16,11 +16,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class DiagnosticTLSObserver implements TLSObserver {
-    private final ByteBuffer inputBuffer = ByteBuffer.allocate(16384);
-    private final ByteBuffer outputBuffer = ByteBuffer.allocate(16384);
-    private final List<Transaction<?>> log = new LinkedList<>();
-    private final TrustManager[] trustManagers;
-
     private static final List<String> SupportedCipherSuites;
 
     static {
@@ -34,27 +29,13 @@ public class DiagnosticTLSObserver implements TLSObserver {
         SupportedCipherSuites = ciphers;
     }
 
+    private final ByteBuffer inputBuffer = ByteBuffer.allocate(16384);
+    private final ByteBuffer outputBuffer = ByteBuffer.allocate(16384);
+    private final List<Transaction<?>> log = new LinkedList<>();
+    private final TrustManager[] trustManagers;
+
     public DiagnosticTLSObserver(TrustManager[] trustManagers) {
         this.trustManagers = trustManagers;
-    }
-
-    private void recordInput(int length) {
-        log.add(Transaction.create(Transaction.Operation.Input, length));
-    }
-
-    private void recordOutput(int length) {
-        log.add(Transaction.create(Transaction.Operation.Output, length));
-    }
-
-    private void recordException(Throwable cause) {
-        log.add(Transaction.create(Transaction.Operation.Exception, cause));
-    }
-
-    private void exception(Throwable cause) throws SSLException {
-        recordException(cause);
-        inputBuffer.flip();
-        outputBuffer.flip();
-        diagnoseException(log, inputBuffer, outputBuffer, cause, trustManagers);
     }
 
     private static String formatLog(List<Transaction<TLSMessage>> log) {
@@ -71,7 +52,7 @@ public class DiagnosticTLSObserver implements TLSObserver {
         // XXX: Refactor this into things which consume Throwable
 
         Throwable blame = Blame.get(cause);
-        if (blame.getClass().getCanonicalName() == "sun.security.provider.certpath.SunCertPathBuilderException") {
+        if (Objects.equals(blame.getClass().getCanonicalName(), "sun.security.provider.certpath.SunCertPathBuilderException")) {
             X509Certificate[] acceptedIssuers = trustManager.getAcceptedIssuers();
             report.append("The remote server provided an unknown/untrusted certificate chain, so the connection terminated by the client.\n");
             report.append(String.format("  The local client has %d certificates in the trust store.\n", acceptedIssuers.length));
@@ -283,6 +264,25 @@ public class DiagnosticTLSObserver implements TLSObserver {
                     break;
             }
         }
+    }
+
+    private void recordInput(int length) {
+        log.add(Transaction.create(Transaction.Operation.Input, length));
+    }
+
+    private void recordOutput(int length) {
+        log.add(Transaction.create(Transaction.Operation.Output, length));
+    }
+
+    private void recordException(Throwable cause) {
+        log.add(Transaction.create(Transaction.Operation.Exception, cause));
+    }
+
+    private void exception(Throwable cause) throws SSLException {
+        recordException(cause);
+        inputBuffer.flip();
+        outputBuffer.flip();
+        diagnoseException(log, inputBuffer, outputBuffer, cause, trustManagers);
     }
 
     private void read(byte[] b, int off, int len, int ret) {

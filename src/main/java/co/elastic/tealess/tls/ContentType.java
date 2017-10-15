@@ -9,7 +9,7 @@ public enum ContentType {
   Handshake((byte) 22),
   ApplicationData((byte) 23);
 
-  private byte type;
+    private final byte type;
 
   ContentType(byte type) {
     this.type = type;

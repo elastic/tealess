@@ -7,20 +7,12 @@ public interface Validator<T> {
   Result validate(T value);
 
   class Result {
-    private boolean valid;
-    private String details;
+      private final boolean valid;
+      private final String details;
 
     private Result(boolean valid, String details) {
       this.valid = valid;
       this.details = details;
-    }
-
-    public boolean isValid() {
-      return valid;
-    }
-
-    public String getDetails() {
-      return details;
     }
 
     public static Result Good() {
@@ -30,6 +22,14 @@ public interface Validator<T> {
     public static Result Bad(String details) {
       return new Result(false, details);
     }
+
+      public boolean isValid() {
+          return valid;
+      }
+
+      public String getDetails() {
+          return details;
+      }
   }
 }
 

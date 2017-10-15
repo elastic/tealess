@@ -6,14 +6,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by jls on 4/26/2017.
  */
 public class BufferUtilTest {
-  public ByteBuffer buffer = ByteBuffer.allocate(1024);
-  private ByteArrayOutputStream output = new ByteArrayOutputStream();
+    public final ByteBuffer buffer = ByteBuffer.allocate(1024);
+    private final ByteArrayOutputStream output = new ByteArrayOutputStream();
 
   @Test
   public void testWrite() throws IOException {

@@ -12,10 +12,10 @@ import java.net.Socket;
 import java.util.Arrays;
 
 class TealessSSLSocketFactory extends SSLSocketFactory {
-    private final SSLSocketFactory factory;
     private static final ByteArrayInputStream emptyInputStream = new ByteArrayInputStream(new byte[0]);
+    private final SSLSocketFactory factory;
     private final String[] cipherSuites;
-    private TrustManager[] trustManagers;
+    private final TrustManager[] trustManagers;
 
     public TealessSSLSocketFactory(SSLSocketFactory factory, String[] cipherSuites, TrustManager[] trustManagers) {
         this.factory = factory;

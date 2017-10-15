@@ -6,10 +6,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
 
 public class SSLSocketFactoryProxy extends SSLSocketFactory {
-    private SSLSocketFactory sslSocketFactory;
+    private final SSLSocketFactory sslSocketFactory;
 
     public SSLSocketFactoryProxy(SSLSocketFactory factory) {
         sslSocketFactory = factory;

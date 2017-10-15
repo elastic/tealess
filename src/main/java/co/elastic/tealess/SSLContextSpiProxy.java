@@ -1,21 +1,15 @@
 package co.elastic.tealess;
 
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLContextSpi;
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLParameters;
-import javax.net.ssl.SSLServerSocketFactory;
-import javax.net.ssl.SSLSessionContext;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.*;
 import java.security.KeyManagementException;
-import java.security.KeyStore;
 import java.security.SecureRandom;
 
 public class SSLContextSpiProxy extends SSLContextSpi {
-    private SSLContext context;
+    private final SSLContext context;
+
+    public SSLContextSpiProxy(SSLContext context) {
+        this.context = context;
+    }
 
     @Override
     protected SSLParameters engineGetDefaultSSLParameters() {
@@ -25,10 +19,6 @@ public class SSLContextSpiProxy extends SSLContextSpi {
     @Override
     protected SSLParameters engineGetSupportedSSLParameters() {
         return context.getSupportedSSLParameters();
-    }
-
-    public SSLContextSpiProxy(SSLContext context) {
-        this.context = context;
     }
 
     @Override

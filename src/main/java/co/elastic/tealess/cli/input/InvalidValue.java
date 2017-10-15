@@ -20,7 +20,7 @@
 package co.elastic.tealess.cli.input;
 
 public class InvalidValue extends Exception {
-  private Object value;
+    private final Object value;
 
   public InvalidValue(String message, Object value) {
     super(message);

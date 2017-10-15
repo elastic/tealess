@@ -7,13 +7,13 @@ import org.junit.Test;
 import java.util.Map;
 import java.util.TreeMap;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by jls on 4/7/2017.
  */
 public class MapUtilTest {
-  private Map<String, Object> input = new TreeMap<>();
+    private final Map<String, Object> input = new TreeMap<>();
 
   @Before
   public void setUp() throws Exception {

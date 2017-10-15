@@ -19,10 +19,6 @@
 
 package co.elastic.tealess;
 
-import co.elastic.tealess.io.ObservableSSLSocket;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import javax.net.ssl.X509ExtendedTrustManager;
 import javax.net.ssl.X509TrustManager;
 import java.net.Socket;

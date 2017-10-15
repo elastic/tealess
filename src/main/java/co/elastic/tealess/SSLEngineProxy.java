@@ -1,14 +1,10 @@
 package co.elastic.tealess;
 
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLEngineResult;
-import javax.net.ssl.SSLException;
-import javax.net.ssl.SSLParameters;
-import javax.net.ssl.SSLSession;
+import javax.net.ssl.*;
 import java.nio.ByteBuffer;
 
 class SSLEngineProxy extends SSLEngine {
-    private SSLEngine engine;
+    private final SSLEngine engine;
 
     public SSLEngineProxy(SSLEngine engine) {
         this.engine = engine;
@@ -130,18 +126,13 @@ class SSLEngineProxy extends SSLEngine {
     }
 
     @Override
-    public void setUseClientMode(boolean b) {
-        engine.setUseClientMode(b);
-    }
-
-    @Override
     public boolean getUseClientMode() {
         return engine.getUseClientMode();
     }
 
     @Override
-    public void setNeedClientAuth(boolean b) {
-        engine.setNeedClientAuth(b);
+    public void setUseClientMode(boolean b) {
+        engine.setUseClientMode(b);
     }
 
     @Override
@@ -150,8 +141,8 @@ class SSLEngineProxy extends SSLEngine {
     }
 
     @Override
-    public void setWantClientAuth(boolean b) {
-        engine.setWantClientAuth(b);
+    public void setNeedClientAuth(boolean b) {
+        engine.setNeedClientAuth(b);
     }
 
     @Override
@@ -160,13 +151,18 @@ class SSLEngineProxy extends SSLEngine {
     }
 
     @Override
-    public void setEnableSessionCreation(boolean b) {
-        engine.setEnableSessionCreation(b);
+    public void setWantClientAuth(boolean b) {
+        engine.setWantClientAuth(b);
     }
 
     @Override
     public boolean getEnableSessionCreation() {
         return engine.getEnableSessionCreation();
+    }
+
+    @Override
+    public void setEnableSessionCreation(boolean b) {
+        engine.setEnableSessionCreation(b);
     }
 
     @Override

@@ -13,7 +13,7 @@ import java.net.SocketException;
 import java.nio.channels.SocketChannel;
 
 public class SSLSocketProxy extends SSLSocket {
-    private SSLSocket socket;
+    private final SSLSocket socket;
 
     public SSLSocketProxy(SSLSocket socket) {
         this.socket = socket;
@@ -75,18 +75,13 @@ public class SSLSocketProxy extends SSLSocket {
     }
 
     @Override
-    public void setUseClientMode(boolean b) {
-        socket.setUseClientMode(b);
-    }
-
-    @Override
     public boolean getUseClientMode() {
         return socket.getUseClientMode();
     }
 
     @Override
-    public void setNeedClientAuth(boolean b) {
-        socket.setNeedClientAuth(b);
+    public void setUseClientMode(boolean b) {
+        socket.setUseClientMode(b);
     }
 
     @Override
@@ -95,8 +90,8 @@ public class SSLSocketProxy extends SSLSocket {
     }
 
     @Override
-    public void setWantClientAuth(boolean b) {
-        socket.setWantClientAuth(b);
+    public void setNeedClientAuth(boolean b) {
+        socket.setNeedClientAuth(b);
     }
 
     @Override
@@ -105,13 +100,18 @@ public class SSLSocketProxy extends SSLSocket {
     }
 
     @Override
-    public void setEnableSessionCreation(boolean b) {
-        socket.setEnableSessionCreation(b);
+    public void setWantClientAuth(boolean b) {
+        socket.setWantClientAuth(b);
     }
 
     @Override
     public boolean getEnableSessionCreation() {
         return socket.getEnableSessionCreation();
+    }
+
+    @Override
+    public void setEnableSessionCreation(boolean b) {
+        socket.setEnableSessionCreation(b);
     }
 
     @Override
@@ -185,13 +185,13 @@ public class SSLSocketProxy extends SSLSocket {
     }
 
     @Override
-    public void setTcpNoDelay(boolean on) throws SocketException {
-        socket.setTcpNoDelay(on);
+    public boolean getTcpNoDelay() throws SocketException {
+        return socket.getTcpNoDelay();
     }
 
     @Override
-    public boolean getTcpNoDelay() throws SocketException {
-        return socket.getTcpNoDelay();
+    public void setTcpNoDelay(boolean on) throws SocketException {
+        socket.setTcpNoDelay(on);
     }
 
     @Override
@@ -210,18 +210,13 @@ public class SSLSocketProxy extends SSLSocket {
     }
 
     @Override
-    public void setOOBInline(boolean on) throws SocketException {
-        socket.setOOBInline(on);
-    }
-
-    @Override
     public boolean getOOBInline() throws SocketException {
         return socket.getOOBInline();
     }
 
     @Override
-    public void setSoTimeout(int timeout) throws SocketException {
-        socket.setSoTimeout(timeout);
+    public void setOOBInline(boolean on) throws SocketException {
+        socket.setOOBInline(on);
     }
 
     @Override
@@ -230,8 +225,8 @@ public class SSLSocketProxy extends SSLSocket {
     }
 
     @Override
-    public void setSendBufferSize(int size) throws SocketException {
-        socket.setSendBufferSize(size);
+    public void setSoTimeout(int timeout) throws SocketException {
+        socket.setSoTimeout(timeout);
     }
 
     @Override
@@ -240,8 +235,8 @@ public class SSLSocketProxy extends SSLSocket {
     }
 
     @Override
-    public void setReceiveBufferSize(int size) throws SocketException {
-        socket.setReceiveBufferSize(size);
+    public void setSendBufferSize(int size) throws SocketException {
+        socket.setSendBufferSize(size);
     }
 
     @Override
@@ -250,8 +245,8 @@ public class SSLSocketProxy extends SSLSocket {
     }
 
     @Override
-    public void setKeepAlive(boolean on) throws SocketException {
-        socket.setKeepAlive(on);
+    public void setReceiveBufferSize(int size) throws SocketException {
+        socket.setReceiveBufferSize(size);
     }
 
     @Override
@@ -260,8 +255,8 @@ public class SSLSocketProxy extends SSLSocket {
     }
 
     @Override
-    public void setTrafficClass(int tc) throws SocketException {
-        socket.setTrafficClass(tc);
+    public void setKeepAlive(boolean on) throws SocketException {
+        socket.setKeepAlive(on);
     }
 
     @Override
@@ -270,13 +265,18 @@ public class SSLSocketProxy extends SSLSocket {
     }
 
     @Override
-    public void setReuseAddress(boolean on) throws SocketException {
-        socket.setReuseAddress(on);
+    public void setTrafficClass(int tc) throws SocketException {
+        socket.setTrafficClass(tc);
     }
 
     @Override
     public boolean getReuseAddress() throws SocketException {
         return socket.getReuseAddress();
+    }
+
+    @Override
+    public void setReuseAddress(boolean on) throws SocketException {
+        socket.setReuseAddress(on);
     }
 
     @Override

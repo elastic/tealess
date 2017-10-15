@@ -17,6 +17,10 @@ public class SSLServerSocketProxy extends SSLServerSocket {
         this.server = server;
     }
 
+    public static void setSocketFactory(SocketImplFactory fac) throws IOException {
+        ServerSocket.setSocketFactory(fac);
+    }
+
     public String[] getEnabledCipherSuites() {
         return server.getEnabledCipherSuites();
     }
@@ -41,36 +45,36 @@ public class SSLServerSocketProxy extends SSLServerSocket {
         server.setEnabledProtocols(strings);
     }
 
-    public void setNeedClientAuth(boolean b) {
-        server.setNeedClientAuth(b);
-    }
-
     public boolean getNeedClientAuth() {
         return server.getNeedClientAuth();
     }
 
-    public void setWantClientAuth(boolean b) {
-        server.setWantClientAuth(b);
+    public void setNeedClientAuth(boolean b) {
+        server.setNeedClientAuth(b);
     }
 
     public boolean getWantClientAuth() {
         return server.getWantClientAuth();
     }
 
-    public void setUseClientMode(boolean b) {
-        server.setUseClientMode(b);
+    public void setWantClientAuth(boolean b) {
+        server.setWantClientAuth(b);
     }
 
     public boolean getUseClientMode() {
         return server.getUseClientMode();
     }
 
-    public void setEnableSessionCreation(boolean b) {
-        server.setEnableSessionCreation(b);
+    public void setUseClientMode(boolean b) {
+        server.setUseClientMode(b);
     }
 
     public boolean getEnableSessionCreation() {
         return server.getEnableSessionCreation();
+    }
+
+    public void setEnableSessionCreation(boolean b) {
+        server.setEnableSessionCreation(b);
     }
 
     public SSLParameters getSSLParameters() {
@@ -121,32 +125,28 @@ public class SSLServerSocketProxy extends SSLServerSocket {
         return server.isClosed();
     }
 
-    public void setSoTimeout(int timeout) throws SocketException {
-        server.setSoTimeout(timeout);
-    }
-
     public int getSoTimeout() throws IOException {
         return server.getSoTimeout();
     }
 
-    public void setReuseAddress(boolean on) throws SocketException {
-        server.setReuseAddress(on);
+    public void setSoTimeout(int timeout) throws SocketException {
+        server.setSoTimeout(timeout);
     }
 
     public boolean getReuseAddress() throws SocketException {
         return server.getReuseAddress();
     }
 
-    public static void setSocketFactory(SocketImplFactory fac) throws IOException {
-        ServerSocket.setSocketFactory(fac);
-    }
-
-    public void setReceiveBufferSize(int size) throws SocketException {
-        server.setReceiveBufferSize(size);
+    public void setReuseAddress(boolean on) throws SocketException {
+        server.setReuseAddress(on);
     }
 
     public int getReceiveBufferSize() throws SocketException {
         return server.getReceiveBufferSize();
+    }
+
+    public void setReceiveBufferSize(int size) throws SocketException {
+        server.setReceiveBufferSize(size);
     }
 
     public void setPerformancePreferences(int connectionTime, int latency, int bandwidth) {

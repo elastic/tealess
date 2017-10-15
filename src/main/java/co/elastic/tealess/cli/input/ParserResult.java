@@ -23,8 +23,8 @@ package co.elastic.tealess.cli.input;
  * Created by jls on 11/16/16.
  */
 public class ParserResult {
+    private final String details;
   private boolean success = true;
-  private String details;
   private Throwable exception;
 
   private ParserResult(boolean success, String details) {
@@ -50,6 +50,10 @@ public class ParserResult {
     return new ParserResult(true, null);
   }
 
+    public static ParserResult error(String details, Throwable exception) {
+        return new ParserResult(details, exception);
+    }
+
   public boolean getSuccess() {
     return success;
   }
@@ -60,9 +64,5 @@ public class ParserResult {
 
   public Throwable getException() {
     return exception;
-  }
-
-  public static ParserResult error(String details, Throwable exception) {
-    return new ParserResult(details, exception);
   }
 }

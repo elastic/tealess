@@ -33,7 +33,6 @@ import java.net.UnknownHostException;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
 import java.security.cert.X509Certificate;
 import java.util.Collection;
 import java.util.List;
@@ -50,27 +49,14 @@ public class SSLChecker {
 
   private static final int defaultTimeout = 1000;
   private static final Logger logger = LogManager.getLogger();
+    private final SSLContextBuilder ctxbuilder;
   private SSLContext ctx;
-  private SSLContextBuilder ctxbuilder;
-
   private PeerCertificateDetails peerCertificateDetails;
 
-  public SSLChecker(SSLContextBuilder cb) throws KeyManagementException, KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException {
+    public SSLChecker(SSLContextBuilder cb) throws KeyManagementException, KeyStoreException, NoSuchAlgorithmException {
     cb.setTracker(this::setPeerCertificateDetails);
     ctxbuilder = cb;
     ctx = cb.build();
-  }
-
-  private void setPeerCertificateDetails(X509Certificate[] chain, String authType, Throwable exception) {
-    peerCertificateDetails = new PeerCertificateDetails(chain, authType, exception);
-  }
-
-  public List<SSLReport> checkAll(InetSocketAddress address) throws ConfigurationProblem {
-    final String hostname = address.getHostString();
-    final Collection<InetAddress> addresses = getAddresses(address);
-    return addresses.stream()
-      .map(a -> check(new InetSocketAddress(a, address.getPort()), hostname))
-      .collect(Collectors.toList());
   }
 
   private static Collection<InetAddress> getAddresses(InetSocketAddress address) throws ConfigurationProblem {
@@ -84,6 +70,18 @@ public class SSLChecker {
       throw new ConfigurationProblem("Unknown host", e);
     }
   }
+
+    private void setPeerCertificateDetails(X509Certificate[] chain, String authType, Throwable exception) {
+        peerCertificateDetails = new PeerCertificateDetails(chain, authType, exception);
+    }
+
+    public List<SSLReport> checkAll(InetSocketAddress address) throws ConfigurationProblem {
+        final String hostname = address.getHostString();
+        final Collection<InetAddress> addresses = getAddresses(address);
+        return addresses.stream()
+                .map(a -> check(new InetSocketAddress(a, address.getPort()), hostname))
+                .collect(Collectors.toList());
+    }
 
   public SSLReport check(InetSocketAddress address, String name) {
     return check(address, name, defaultTimeout);

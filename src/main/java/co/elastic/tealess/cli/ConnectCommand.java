@@ -19,8 +19,6 @@
 
 package co.elastic.tealess.cli;
 
-import co.elastic.tealess.Bug;
-import co.elastic.tealess.Resolver;
 import co.elastic.tealess.*;
 import co.elastic.tealess.cli.input.ArgsParser;
 import co.elastic.tealess.cli.input.InetSocketAddressInput;
@@ -52,14 +50,8 @@ public class ConnectCommand implements Command {
   private static final String DESCRIPTION = "Connect to an address with SSL/TLS and diagnose the result.";
   private final KeyStoreBuilder keys;
   private final KeyStoreBuilder trust;
-
-  private void setAddress(InetSocketAddress address) {
-    this.address = address;
-  }
-
-  private Path keyStore = null;
+  private final Path keyStore = null;
   private InetSocketAddress address = null;
-
   public ConnectCommand() throws Bug {
     try {
       keys = new KeyStoreBuilder();
@@ -67,6 +59,15 @@ public class ConnectCommand implements Command {
     } catch (IOException | CertificateException | KeyStoreException | NoSuchAlgorithmException | UnrecoverableKeyException e) {
       throw new Bug("'new KeyStoreBuilder' failed", e);
     }
+  }
+
+  static char[] promptSecret(String text) {
+    System.out.printf("%s: ", text);
+    return System.console().readPassword();
+  }
+
+  private void setAddress(InetSocketAddress address) {
+    this.address = address;
   }
 
   private void setCAPath(Path path) throws CertificateException, KeyStoreException, IOException {
@@ -110,7 +111,7 @@ public class ConnectCommand implements Command {
     SSLChecker checker;
     try {
       checker = new SSLChecker(cb);
-    } catch (KeyManagementException | KeyStoreException | NoSuchAlgorithmException | UnrecoverableKeyException e) {
+    } catch (KeyManagementException | KeyStoreException | NoSuchAlgorithmException e) {
       throw new ConfigurationProblem("Failed to build tealess context.", e);
     }
 
@@ -132,10 +133,5 @@ public class ConnectCommand implements Command {
     System.out.println();
 
     SSLReportAnalyzer.analyzeMany(reports);
-  }
-
-  static char[] promptSecret(String text) {
-    System.out.printf("%s: ", text);
-    return System.console().readPassword();
   }
 }

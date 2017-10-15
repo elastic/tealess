@@ -1,6 +1,5 @@
 package co.elastic.tealess.cli;
 
-import co.elastic.tealess.Bug;
 import co.elastic.tealess.*;
 import co.elastic.tealess.cli.input.ArgsParser;
 import co.elastic.tealess.cli.input.InetSocketAddressInput;
@@ -30,67 +29,9 @@ public class TrustCommand implements Command {
   private static final Logger logger = LogManager.getLogger();
   private static final String DESCRIPTION = "Fetch a remote server's ssl certificate and save it locally.";
   private static final Base64.Encoder b64encoder = Base64.getMimeEncoder();
-
-  @Override
-  public ArgsParser getParser() {
-    return new ArgsParser()
-      .addNamed(new Setting<Level>("log-level", "The log level").setDefaultValue(Level.WARN).parseWith(Level::valueOf), LogUtils::setLogLevel)
-      .addNamed(new Setting<Path>("truststore", "The path to a java keystore or pkcs12 file to save any retrieved certificates").parseWith(Paths::get), this::setTrustStore)
-      .addNamed(new Setting<Path>("pem", "The path to a file to write the PEM-formatted certificate chain").parseWith(Paths::get), this::setPEMPath)
-      .addPositional(new Setting<>("address", "The address in form of `host` or `host:port` to connect", new InetSocketAddressInput(443)), this::setAddress);
-  }
-
-  private void setTrustStore(Path path) {
-    trustStore = path;
-  }
-
-  private void setPEMPath(Path path) {
-    pemPath = path;
-  }
-
-  private void setAddress(InetSocketAddress address) {
-    this.address = address;
-  }
-
   private Path trustStore = null;
   private Path pemPath = null;
   private InetSocketAddress address = null;
-
-  @Override
-  public void run() throws ConfigurationProblem, Bug {
-    final SSLChecker checker = getSSLChecker();
-    final List<SSLReport> reports = checker.checkAll(address);
-
-    for (SSLReport report : reports) {
-      if (!report.success()) {
-        logger.error("Failed SSL connection to {}", report.getAddress());
-        continue;
-      }
-
-      final PeerCertificateDetails peerCertificateDetails = report.getPeerCertificateDetails();
-      if (peerCertificateDetails.getException() != null) {
-        logger.info("No certificates for {} because {}", report.getAddress(), peerCertificateDetails.getException().getMessage());
-        continue;
-      }
-
-      final X509Certificate[] chain = peerCertificateDetails.getChain();
-      System.out.println("Trust: " + trustStore);
-      System.out.println("PEM: " + pemPath);
-
-      if (pemPath == null && trustStore == null) {
-        writePEM(System.out, chain);
-      } else {
-        if (pemPath != null) {
-          writePEM(pemPath, chain);
-        }
-
-        if (trustStore != null) {
-          writeTrustStore(trustStore, chain, report.getAddress());
-        }
-
-      }
-    }
-  }
 
   private static void writeTrustStore(Path path, X509Certificate[] chain, InetSocketAddress address) throws Bug, ConfigurationProblem {
     KeyStoreBuilder ksb;
@@ -178,6 +119,63 @@ public class TrustCommand implements Command {
     }
   }
 
+  @Override
+  public ArgsParser getParser() {
+    return new ArgsParser()
+            .addNamed(new Setting<Level>("log-level", "The log level").setDefaultValue(Level.WARN).parseWith(Level::valueOf), LogUtils::setLogLevel)
+            .addNamed(new Setting<Path>("truststore", "The path to a java keystore or pkcs12 file to save any retrieved certificates").parseWith(Paths::get), this::setTrustStore)
+            .addNamed(new Setting<Path>("pem", "The path to a file to write the PEM-formatted certificate chain").parseWith(Paths::get), this::setPEMPath)
+            .addPositional(new Setting<>("address", "The address in form of `host` or `host:port` to connect", new InetSocketAddressInput(443)), this::setAddress);
+  }
+
+  private void setTrustStore(Path path) {
+    trustStore = path;
+  }
+
+  private void setPEMPath(Path path) {
+    pemPath = path;
+  }
+
+  private void setAddress(InetSocketAddress address) {
+    this.address = address;
+  }
+
+  @Override
+  public void run() throws ConfigurationProblem, Bug {
+    final SSLChecker checker = getSSLChecker();
+    final List<SSLReport> reports = checker.checkAll(address);
+
+    for (SSLReport report : reports) {
+      if (!report.success()) {
+        logger.error("Failed SSL connection to {}", report.getAddress());
+        continue;
+      }
+
+      final PeerCertificateDetails peerCertificateDetails = report.getPeerCertificateDetails();
+      if (peerCertificateDetails.getException() != null) {
+        logger.info("No certificates for {} because {}", report.getAddress(), peerCertificateDetails.getException().getMessage());
+        continue;
+      }
+
+      final X509Certificate[] chain = peerCertificateDetails.getChain();
+      System.out.println("Trust: " + trustStore);
+      System.out.println("PEM: " + pemPath);
+
+      if (pemPath == null && trustStore == null) {
+        writePEM(System.out, chain);
+      } else {
+        if (pemPath != null) {
+          writePEM(pemPath, chain);
+        }
+
+        if (trustStore != null) {
+          writeTrustStore(trustStore, chain, report.getAddress());
+        }
+
+      }
+    }
+  }
+
   private SSLChecker getSSLChecker() throws Bug, ConfigurationProblem {
     final KeyStoreBuilder keys;
     final KeyStoreBuilder trust;
@@ -200,7 +198,7 @@ public class TrustCommand implements Command {
     final SSLChecker checker;
     try {
       checker = new SSLChecker(cb);
-    } catch (KeyManagementException | KeyStoreException | NoSuchAlgorithmException | UnrecoverableKeyException e) {
+    } catch (KeyManagementException | KeyStoreException | NoSuchAlgorithmException e) {
       throw new ConfigurationProblem("Failed to build tealess context.", e);
     }
     return checker;

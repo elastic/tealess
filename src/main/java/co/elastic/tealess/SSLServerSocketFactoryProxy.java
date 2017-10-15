@@ -10,7 +10,7 @@ import java.net.ServerSocket;
  * Created by jls on 10/14/2017.
  */
 public class SSLServerSocketFactoryProxy extends SSLServerSocketFactory {
-    private SSLServerSocketFactory factory;
+    private final SSLServerSocketFactory factory;
 
     public SSLServerSocketFactoryProxy(SSLServerSocketFactory factory) {
         this.factory = factory;
