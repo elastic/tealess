@@ -126,10 +126,10 @@ public class DiagnosticTLSObserver implements TLSObserver {
                     }
                 }
                 if (!disabled.isEmpty()) {
-                    report.append("Server can support these ciphers, but they are disabled by configuration: " + disabled);
+                    report.append("Server can support these ciphers, but they are disabled by configuration: " + disabled + "\n");
                 }
                 if (!unsupported.isEmpty()) {
-                    report.append("Server has no support for the following ciphers: " + unsupported);
+                    report.append("Server has no support for the following ciphers: " + unsupported + "\n");
                 }
 
                 report.append(formatLog(messageLog));

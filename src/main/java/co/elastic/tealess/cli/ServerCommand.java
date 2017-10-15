@@ -35,7 +35,7 @@ import java.security.cert.CertificateException;
 public class ServerCommand implements Command {
     private static final Logger logger = LogManager.getLogger();
 
-    private static final String DESCRIPTION = "Connect to an address with SSL/TLS and diagnose the result.";
+    private static final String DESCRIPTION = "Run a TLS server with a given configuration.";
     private final KeyStoreBuilder keys;
     private final KeyStoreBuilder trust;
     private final Path keyStore = null;
@@ -118,6 +118,18 @@ public class ServerCommand implements Command {
                                          SslHandler sslHandler = new SslHandler(engine);
                                          sslHandler.setHandshakeTimeoutMillis(1000);
                                          pipeline.addLast(sslHandler);
+                                         pipeline.addLast(new SimpleChannelInboundHandler<Object>() {
+
+                                             @Override
+                                             protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
+
+                                             }
+
+                                             @Override
+                                             public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+                                                 System.out.println("Exception: " + cause.getMessage());
+                                             }
+                                         });
                                      }
                                  });
                         //pipeline.addLast(sslHandler);
