@@ -19,8 +19,8 @@
 
 package co.elastic.tealess.cli;
 
-import co.elastic.Bug;
-import co.elastic.Resolver;
+import co.elastic.tealess.Bug;
+import co.elastic.tealess.Resolver;
 import co.elastic.tealess.*;
 import co.elastic.tealess.cli.input.ArgsParser;
 import co.elastic.tealess.cli.input.InetSocketAddressInput;

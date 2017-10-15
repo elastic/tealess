@@ -1,5 +1,6 @@
 package co.elastic.tealess;
 
+import co.elastic.tealess.cli.beats.MapUtil;
 import org.junit.Before;
 import org.junit.Test;
 

@@ -18,7 +18,7 @@
 
 package co.elastic.tealess.cli;
 
-import co.elastic.Bug;
+import co.elastic.tealess.Bug;
 import co.elastic.tealess.ConfigurationProblem;
 import co.elastic.tealess.cli.environment.CipherSuite;
 import co.elastic.tealess.cli.environment.Protocol;
@@ -39,6 +39,9 @@ import java.util.*;
  */
 public class EnvironmentCommand implements Command {
   private static final Logger logger = LogManager.getLogger();
+
+  // XXX: Detect the absence of Unlimited-Stremgth Cryptography policy
+  // This policy only impacts Oracle Java, not OpenJDK, but it might be nice to know.
 
   public static Set<Protocol> getProtocols(SSLEngine engine) {
     Set<Protocol> protocols = new TreeSet<>();
@@ -64,7 +67,7 @@ public class EnvironmentCommand implements Command {
       boolean enabled = javaEnabledCiphers.contains(suite);
       boolean java = javaAllCiphers.contains(suite);
 //      boolean tcnative = tcnativeCiphers.contains(suite);
-//      suites.add(new CipherSuite(suite, enabled, java, tcnative));
+      suites.add(new CipherSuite(suite, enabled, java));
     });
     return suites;
   }

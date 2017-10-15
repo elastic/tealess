@@ -1,18 +1,15 @@
 package co.elastic.tealess;
 
-import co.elastic.Blame;
 import co.elastic.tealess.io.ObservableSSLSocket;
 import co.elastic.tealess.io.ObservableSocket;
 import co.elastic.tealess.io.Transaction;
 import co.elastic.tealess.tls.Alert;
-import co.elastic.tealess.tls.CertificateMessage;
 import co.elastic.tealess.tls.ClientHello;
 import co.elastic.tealess.tls.InvalidValue;
 import co.elastic.tealess.tls.TLSDecoder;
 import co.elastic.tealess.tls.TLSHandshake;
 import co.elastic.tealess.tls.TLSMessage;
 import co.elastic.tealess.tls.TLSPlaintext;
-import com.sun.org.apache.xpath.internal.operations.Bool;
 
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLHandshakeException;
@@ -22,8 +19,6 @@ import javax.net.ssl.X509ExtendedTrustManager;
 import java.lang.reflect.InvocationTargetException;
 import java.net.Socket;
 import java.nio.ByteBuffer;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
 import java.util.LinkedList;
 import java.util.List;
@@ -119,7 +114,7 @@ public class DiagnosticTLSObserver implements TLSObserver {
                 List<Transaction<TLSMessage>> messageLog = readLog(log, inputBuffer, outputBuffer);
                 if ((messageLog.size() == 2) && (messageLog.get(0).op == Transaction.Operation.Output) && (messageLog.get(0).value instanceof ClientHello) && (messageLog.get(1).value instanceof Alert)) {
                     ClientHello message = (ClientHello) messageLog.get(0).value;
-                    report.append(String.format("  Diagnosis: This can occur for a variety of reasons:\n"));
+                    report.append("  Diagnosis: This can occur for a variety of reasons:\n");
                     report.append(String.format("  1) Maybe server rejected our SSL/TLS version? We provided: %s\n", message.getVersion()));
                     report.append(String.format("  2) Or, Server rejected all of our ciphersuites? We provided: %s\n", message.getCipherSuites()));
                 }

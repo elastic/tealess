@@ -74,12 +74,12 @@ public class ArgsParser {
   }
 
   public <T> ArgsParser addNamed(Setting<T> setting, TryConsumer<T> consumer) {
-    namedSettings.add(new Entry<T>(setting, consumer));
+    namedSettings.add(new Entry<>(setting, consumer));
     return this;
   }
 
   public <T> ArgsParser addPositional(Setting<T> setting, TryConsumer<T> consumer) {
-    positionalSettings.add(new Entry<T>(setting, consumer));
+    positionalSettings.add(new Entry<>(setting, consumer));
     return this;
   }
 

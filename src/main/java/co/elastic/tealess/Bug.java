@@ -17,15 +17,11 @@
  * under the License.
  */
 
-package co.elastic;
+package co.elastic.tealess;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.Arrays;
-import java.util.Collection;
-
-public interface Resolver {
-  Collection<InetAddress> resolve(String name) throws UnknownHostException;
-
-  Resolver SystemResolver = (String name) -> Arrays.asList(InetAddress.getAllByName(name));
+public class Bug extends Exception {
+  public Bug(String message, Throwable cause) {
+    super(message, cause);
+  }
 }
+

@@ -6,7 +6,7 @@ package co.elastic.tealess.cli.input;
 public interface Validator<T> {
   Result validate(T value);
 
-  public class Result {
+  class Result {
     private boolean valid;
     private String details;
 

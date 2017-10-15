@@ -1,8 +1,9 @@
 package co.elastic.tealess.cli;
 
-import co.elastic.Bug;
-import co.elastic.Resolver;
+import co.elastic.tealess.Bug;
+import co.elastic.tealess.Resolver;
 import co.elastic.tealess.*;
+import co.elastic.tealess.cli.beats.MapUtil;
 import co.elastic.tealess.cli.input.ArgsParser;
 import co.elastic.tealess.cli.input.InetSocketAddressInput;
 import co.elastic.tealess.cli.input.PathInput;
@@ -47,7 +48,7 @@ public class BeatsCommand implements Command {
   public ArgsParser getParser() {
     return new ArgsParser()
       .setDescription(DESCRIPTION)
-      .<Path>addPositional(new Setting<Path>("settings", "The path to the beats yaml", PathInput.singleton), this::setSettingsPath);
+      .addPositional(new Setting<>("settings", "The path to the beats yaml", PathInput.singleton), this::setSettingsPath);
   }
 
   @Override

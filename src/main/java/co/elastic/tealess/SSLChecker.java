@@ -19,13 +19,9 @@
 
 package co.elastic.tealess;
 
-import co.elastic.Blame;
-import co.elastic.Resolver;
-//import org.apache.http.conn.ssl.DefaultHostnameVerifier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
@@ -95,30 +91,33 @@ public class SSLChecker {
 
   private SSLReport check(InetSocketAddress address, String name, int timeout) {
     SSLReport sslReport = new SSLReport();
-    sslReport.setSSLContextBuilder(ctxbuilder);
     sslReport.setSSLContext(ctx);
     sslReport.setHostname(name);
     sslReport.setAddress(address);
     sslReport.setTimeout(timeout);
 
-    logger.debug("Trying {} (expected hostname {})", address, name);
+    logger.debug("Trying address {} (hostname {})", address, name);
 
-    Socket socket = new Socket();
-    checkConnect(sslReport, socket, timeout);
-    if (sslReport.getException() != null) {
-      return sslReport;
+    try(Socket socket = new Socket()) {
+      checkConnect(sslReport, socket, timeout);
+      if (sslReport.getException() != null) {
+        return sslReport;
+      }
+
+      checkHandshake(sslReport, socket);
+      if (sslReport.getException() != null) {
+        return sslReport;
+      }
+
+      checkHostnameVerification(sslReport);
+    } catch (IOException e) {
+      System.out.println("Failure on socket: " + e);
     }
-
-    checkHandshake(sslReport, socket);
-    if (sslReport.getException() != null) {
-      return sslReport;
-    }
-
-    checkHostnameVerification(sslReport);
     return sslReport;
   }
 
   private void checkHostnameVerification(SSLReport sslReport) {
+    // XXX: Implement
     //HostnameVerifier hv = new DefaultHostnameVerifier();
     //sslReport.setHostnameVerified(hv.verify(sslReport.getHostname(), sslReport.getSSLSession()));
   }
@@ -156,18 +155,17 @@ public class SSLChecker {
 
     // Calling getSession here will implicitly attempt to complete the TLS handshake
     // if it is not already done.
+    try {
+      sslSocket.startHandshake();
+    } catch (IOException e) {
+      sslReport.setFailed(e);
+      return;
+    }
+
     sslReport.setSSLSession(sslSocket.getSession());
     sslReport.setPeerCertificateDetails(peerCertificateDetails);
     if (peerCertificateDetails != null && peerCertificateDetails.getException() != null) {
       sslReport.setFailed(peerCertificateDetails.getException());
-    }
-
-    try {
-      socket.close();
-    } catch (IOException e) {
-      sslReport.setFailed(e);
-      Throwable cause = Blame.get(e);
-      logger.warn("SSLSocket.close() failed: {} {}", cause.getClass(), cause.getMessage());
     }
   }
 }

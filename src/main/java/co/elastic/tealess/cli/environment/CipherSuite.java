@@ -31,7 +31,7 @@ public class CipherSuite implements Comparable<CipherSuite> {
   boolean java;
   boolean tcnative;
 
-  public CipherSuite(String name, boolean enabled, boolean java, boolean tcnative) {
+  public CipherSuite(String name, boolean enabled, boolean java) {
     this.name = name;
     this.enabled = enabled;
     this.java = java;

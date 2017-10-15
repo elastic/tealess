@@ -19,7 +19,7 @@
 
 package co.elastic.tealess.cli;
 
-import co.elastic.Bug;
+import co.elastic.tealess.Bug;
 import co.elastic.tealess.ConfigurationProblem;
 import co.elastic.tealess.cli.input.ArgsParser;
 

@@ -39,11 +39,11 @@ public class SSLSocketFactoryProxy extends SSLSocketFactory {
         return sslSocketFactory.createSocket();
     }
 
-    public Socket createSocket(String s, int i) throws IOException, UnknownHostException {
+    public Socket createSocket(String s, int i) throws IOException {
         return sslSocketFactory.createSocket(s, i);
     }
 
-    public Socket createSocket(String s, int i, InetAddress inetAddress, int i1) throws IOException, UnknownHostException {
+    public Socket createSocket(String s, int i, InetAddress inetAddress, int i1) throws IOException {
         return sslSocketFactory.createSocket(s, i, inetAddress, i1);
     }
 

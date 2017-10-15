@@ -19,7 +19,6 @@
 
 package co.elastic.tealess;
 
-import co.elastic.Bug;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

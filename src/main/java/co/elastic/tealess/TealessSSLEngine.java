@@ -32,6 +32,10 @@ public class TealessSSLEngine extends SSLEngineProxy {
         try {
             engine.setEnabledCipherSuites(cipherSuites);
         } catch (IllegalArgumentException e) {
+            // XXX: If this failed because we tried to use a strong cipher, let's help the operator.
+            // XXX: Oracle Java ships with strong ciphers disabled and requires operators to install a special
+            // XXX: security policy file ("unlimited-strength cryptography") to enable them.
+            // XXX: So we should detect this and give the operator a very clear action to resolve the problem.
             // Provide a more informative exception when an invalid ciphersuite is selected.
             throw new IllegalArgumentException(e.getMessage() + ". Supported ciphersuites are: " + Arrays.asList(engine.getSupportedCipherSuites()), e);
         }

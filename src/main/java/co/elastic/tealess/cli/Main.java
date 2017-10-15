@@ -43,6 +43,9 @@ public class Main {
     Command command;
 
     switch (commandName) {
+      case "server":
+        command = new ServerCommand();
+        break;
       case "connect":
         command = new ConnectCommand();
         break;

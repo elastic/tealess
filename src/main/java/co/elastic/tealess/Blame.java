@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package co.elastic;
+package co.elastic.tealess;
 
 public class Blame {
   public static Throwable get(Throwable e) {

@@ -19,8 +19,6 @@
 
 package co.elastic.tealess;
 
-import co.elastic.Blame;
-
 import javax.net.ssl.SSLParameters;
 import java.io.IOException;
 import java.security.*;
@@ -39,6 +37,7 @@ public class SSLReportAnalyzer {
     List<SSLReport> successful = reports.stream().filter(SSLReport::success).collect(Collectors.toList());
 
     if (successful.size() > 0) {
+      // XXX: Show Session details (chosen cipher suite, etc)
       successful.forEach(r -> System.out.printf("Success: %s\n", r.getAddress()));
     } else {
       System.out.println("All SSL/TLS connections failed.");
@@ -49,36 +48,16 @@ public class SSLReportAnalyzer {
       Class<? extends Throwable> blame = entry.getKey();
       List<SSLReport> failures = entry.getValue();
       System.out.println();
-      System.out.printf("Failure: %s\n", blame);
+      Throwable e = failures.get(0).getException();
+      String[] messageLines = e.getMessage().split("\r?\n");
+      System.out.printf("Failure: %s - %s\n", e.getClass(), messageLines[0]);
       for (SSLReport r : failures) {
         System.out.printf("  %s\n", r.getAddress());
       }
 
-      analyze(blame, failures.get(0));
-
-      //failures.get(0).getException().printStackTrace();
-    }
-  }
-
-  /* TODO: Use org.apache.logging.log4j.message.ParameterizedMessage to format the report. */
-
-  public static void analyze(Class<? extends Throwable> blame, SSLReport report) {
-    // I use Class.getCanonicalName() here to avoid a compiler warning that sun.security internal API.
-    if (blame.getCanonicalName().equals("sun.security.provider.certpath.SunCertPathBuilderException")
-      || blame == java.security.cert.CertPathValidatorException.class) {
-      analyzeCertificatePathProblem(report);
-    } else if (blame == java.io.EOFException.class) {
-      analyzeEarlyEOF(report);
-    } else if (blame == java.net.SocketTimeoutException.class) {
-      analyzeTimeout(report);
-    } else if (blame == javax.net.ssl.SSLHandshakeException.class) {
-      analyzeHandshakeProblem(report);
-    } else if (blame == javax.net.ssl.SSLException.class && report.getException().getMessage().matches("Received fatal alert: handshake_failure")) {
-      //analyzeHandshakeRejected(report);
-    } else if (blame == java.io.IOException.class) {
-      //analyzeHandshakeRejected(report);
-    } else {
-      System.out.println("  Analysis: " + report.getException().getMessage());
+      if (messageLines.length > 1) {
+        Arrays.stream(messageLines).skip(1).forEach(System.out::println);
+      }
     }
   }
 

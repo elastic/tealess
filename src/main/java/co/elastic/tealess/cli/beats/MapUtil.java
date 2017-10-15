@@ -1,4 +1,4 @@
-package co.elastic.tealess;
+package co.elastic.tealess.cli.beats;
 
 import java.util.Map;
 import java.util.TreeMap;
