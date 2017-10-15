@@ -3,25 +3,15 @@ package co.elastic.tealess;
 import co.elastic.tealess.io.ObservableSSLSocket;
 import co.elastic.tealess.io.ObservableSocket;
 import co.elastic.tealess.io.Transaction;
-import co.elastic.tealess.tls.Alert;
-import co.elastic.tealess.tls.ClientHello;
-import co.elastic.tealess.tls.InvalidValue;
-import co.elastic.tealess.tls.TLSDecoder;
-import co.elastic.tealess.tls.TLSHandshake;
-import co.elastic.tealess.tls.TLSMessage;
-import co.elastic.tealess.tls.TLSPlaintext;
+import co.elastic.tealess.tls.*;
 
-import javax.net.ssl.SSLException;
-import javax.net.ssl.SSLHandshakeException;
-import javax.net.ssl.SSLSocket;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509ExtendedTrustManager;
+import javax.net.ssl.*;
 import java.lang.reflect.InvocationTargetException;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -30,6 +20,19 @@ public class DiagnosticTLSObserver implements TLSObserver {
     private final ByteBuffer outputBuffer = ByteBuffer.allocate(16384);
     private final List<Transaction<?>> log = new LinkedList<>();
     private final TrustManager[] trustManagers;
+
+    private static final List<String> SupportedCipherSuites;
+
+    static {
+        List<String> ciphers;
+        try {
+            ciphers = Arrays.asList(SSLContext.getDefault().getSupportedSSLParameters().getCipherSuites());
+        } catch (NoSuchAlgorithmException e) {
+            // Something is wrong and SSL is not available?
+            ciphers = Collections.emptyList();
+        }
+        SupportedCipherSuites = ciphers;
+    }
 
     public DiagnosticTLSObserver(TrustManager[] trustManagers) {
         this.trustManagers = trustManagers;
@@ -122,6 +125,27 @@ public class DiagnosticTLSObserver implements TLSObserver {
                 report.append(formatLog(messageLog));
             } else if (blame.getMessage().matches("Received fatal alert: unknown_ca")) {
                 report.append("Problem remote aborted the connection because it doesn't trust our provided certificate.");
+            } else if (blame.getMessage().matches("no cipher suites in common")) {
+                report.append("The client provided ciphers and that this server did not accept\n");
+                List<Transaction<TLSMessage>> messageLog = readLog(log, inputBuffer, outputBuffer);
+                List<CipherSuite> clientCiphers = ((ClientHello) messageLog.get(0).value).getCipherSuites();
+                List<CipherSuite> disabled = new ArrayList(10);
+                List<CipherSuite> unsupported = new ArrayList(10);
+                for (CipherSuite cipherSuite : clientCiphers) {
+                    if (SupportedCipherSuites.contains(cipherSuite.name())) {
+                        disabled.add(cipherSuite);
+                    } else {
+                        unsupported.add(cipherSuite);
+                    }
+                }
+                if (!disabled.isEmpty()) {
+                    report.append("Server would support these ciphers, but they are disabled by configuration: " + disabled);
+                }
+                if (!unsupported.isEmpty()) {
+                    report.append("Server has no support for the following ciphers: " + unsupported);
+                }
+
+                report.append(formatLog(messageLog));
             }
 
             final SSLException diagnosis;

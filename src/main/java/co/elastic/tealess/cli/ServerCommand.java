@@ -115,12 +115,13 @@ public class ServerCommand implements Command {
                 pipeline.addLast(new SimpleChannelInboundHandler<NioSocketChannel>() {
                                      @Override
                                      protected void channelRead0(ChannelHandlerContext chc, NioSocketChannel msg) throws Exception {
+                                         System.out.println("New connection " + msg);
                                          group.register(msg);
-                                         System.out.println("channelRead0: " + msg.getClass());
                                          ChannelPipeline pipeline = msg.pipeline();
                                          SSLEngine engine = ctx.createSSLEngine();
-                                         engine.setUseClientMode(true);
+                                         engine.setUseClientMode(false);
                                          SslHandler sslHandler = new SslHandler(engine);
+                                         sslHandler.setHandshakeTimeoutMillis(1000);
                                          pipeline.addLast(sslHandler);
                                      }
                                  });
