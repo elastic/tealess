@@ -6,14 +6,19 @@ import co.elastic.tealess.KeyStoreBuilder;
 import co.elastic.tealess.SSLContextBuilder;
 import co.elastic.tealess.cli.input.ArgsParser;
 import co.elastic.tealess.cli.input.InetSocketAddressInput;
+import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.*;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.ServerSocketChannel;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.ssl.SslHandler;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLServerSocket;
-import javax.net.ssl.SSLServerSocketFactory;
-import javax.net.ssl.SSLSocket;
+import javax.net.ssl.*;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -99,19 +104,36 @@ public class ServerCommand implements Command {
             return;
         }
 
-        SSLServerSocketFactory serverSocketFactory = ctx.getServerSocketFactory();
-        try {
-            SSLServerSocket serverSocket = (SSLServerSocket) serverSocketFactory.createServerSocket();
-            serverSocket.bind(address);
+        EventLoopGroup group = new NioEventLoopGroup();
 
-            while (true) {
-                SSLSocket accept = (SSLSocket) serverSocket.accept();
-                accept.startHandshake();
-                accept.close();
+        Bootstrap bootstrap = new Bootstrap();
+        bootstrap.group(group);
+        bootstrap.channel(NioServerSocketChannel.class).handler(new ChannelInitializer<ServerSocketChannel>() {
+            @Override
+            protected void initChannel(ServerSocketChannel ch) throws Exception {
+                ChannelPipeline pipeline = ch.pipeline();
+                pipeline.addLast(new SimpleChannelInboundHandler<NioSocketChannel>() {
+                                     @Override
+                                     protected void channelRead0(ChannelHandlerContext chc, NioSocketChannel msg) throws Exception {
+                                         group.register(msg);
+                                         System.out.println("channelRead0: " + msg.getClass());
+                                         ChannelPipeline pipeline = msg.pipeline();
+                                         SSLEngine engine = ctx.createSSLEngine();
+                                         engine.setUseClientMode(true);
+                                         SslHandler sslHandler = new SslHandler(engine);
+                                         pipeline.addLast(sslHandler);
+                                     }
+                                 });
+                        //pipeline.addLast(sslHandler);
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+        });
+        System.out.println("Binding " + address);
+        ChannelFuture future = bootstrap.bind(address);
+        try {
+            System.out.println("Waiting...");
+            future.sync();
+        } catch (InterruptedException e1) {
+            e1.printStackTrace();
         }
-
     }
 }
