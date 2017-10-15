@@ -63,10 +63,12 @@ public class DiagnosticTLSObserver implements TLSObserver {
 
     public static void diagnoseException(List<Transaction<?>> log, ByteBuffer inputBuffer, ByteBuffer outputBuffer, Throwable cause, TrustManager[] trustManagers) throws SSLException {
         StringBuilder report = new StringBuilder();
-        // xxx: find the correct one.
-        // XXX: Have a way for the TrustManager to tell the socket (or this observer?) about itself so that we don't have
-        // xxx: to do this lookup (which fails if using the default trust manager on the system).
+
+
+        // XXX: Choose the correct one if there are more than one?
         X509ExtendedTrustManager trustManager = (X509ExtendedTrustManager) trustManagers[0];
+
+        // XXX: Refactor this into things which consume Throwable
 
         Throwable blame = Blame.get(cause);
         if (blame.getClass().getCanonicalName() == "sun.security.provider.certpath.SunCertPathBuilderException") {
@@ -132,6 +134,10 @@ public class DiagnosticTLSObserver implements TLSObserver {
                 List<CipherSuite> disabled = new ArrayList(10);
                 List<CipherSuite> unsupported = new ArrayList(10);
                 for (CipherSuite cipherSuite : clientCiphers) {
+                    if (cipherSuite == CipherSuite.TLS_EMPTY_RENEGOTIATION_INFO_SCSV) {
+                        // Skip this one. It's not actually a cipher. It's a marker indicating that client supports secure renegotiation.
+                        continue;
+                    }
                     if (SupportedCipherSuites.contains(cipherSuite.name())) {
                         disabled.add(cipherSuite);
                     } else {
@@ -139,7 +145,7 @@ public class DiagnosticTLSObserver implements TLSObserver {
                     }
                 }
                 if (!disabled.isEmpty()) {
-                    report.append("Server would support these ciphers, but they are disabled by configuration: " + disabled);
+                    report.append("Server can support these ciphers, but they are disabled by configuration: " + disabled);
                 }
                 if (!unsupported.isEmpty()) {
                     report.append("Server has no support for the following ciphers: " + unsupported);
