@@ -8,6 +8,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.junit.Test;
 
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManagerFactory;
 import java.io.File;
@@ -29,7 +30,7 @@ public class Demonstration {
         defaultContext = SSLContext.getInstance("TLS");
     }
 
-    @Test
+    @Test(expected = SSLHandshakeException.class)
     public void ancientCipher() throws IOException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
         contextBuilder.setCipherSuites(new String[]{CipherSuite.TLS_KRB5_EXPORT_WITH_DES_CBC_40_MD5.name()});
         SSLContext context = contextBuilder.build();
@@ -37,33 +38,26 @@ public class Demonstration {
         tryHTTP(context);
     }
 
-    @Test
+    @Test(expected = SSLHandshakeException.class)
     public void untrustedCertificate() throws IOException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, CertificateException, UnrecoverableKeyException {
         String keystorePath = SocketWrapperTest.class.getClassLoader().getResource("keystore.jks").getPath();
         KeyStoreBuilder trust = new KeyStoreBuilder();
-        trust.useKeyStore(new File(keystorePath), "garbage".toCharArray());
+        trust.useKeyStore(new File(keystorePath), "password".toCharArray());
         contextBuilder.setTrustStore(trust.buildKeyStore());
         SSLContext context = contextBuilder.build();
 
-        try {
-            tryHTTP(context);
-        } catch (IOException e) {
-            System.out.println(e.getMessage());
-        }
+        tryHTTP(context);
     }
 
-    @Test
+    @Test(expected = SSLHandshakeException.class)
     public void defaultSSLContextUntrustedCertificate() throws IOException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, CertificateException, UnrecoverableKeyException {
         String keystorePath = SocketWrapperTest.class.getClassLoader().getResource("keystore.jks").getPath();
         KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
-        ks.load(new FileInputStream(keystorePath), "garbage".toCharArray());
+        ks.load(new FileInputStream(keystorePath), "password".toCharArray());
         tmf.init(ks);
         defaultContext.init(null, tmf.getTrustManagers(), null);
-        try {
-            tryHTTP(defaultContext);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+
+        tryHTTP(defaultContext);
     }
 
     private void tryHTTP(SSLContext context) throws IOException {
