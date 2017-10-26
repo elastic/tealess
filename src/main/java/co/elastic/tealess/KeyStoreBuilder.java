@@ -171,8 +171,9 @@ public class KeyStoreBuilder {
   public KeyStore buildKeyStore() throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException {
     if (!modified) {
       useDefaultTrustStore();
+    } else {
+      logger.trace("Returning non-default keystore");
     }
-    logger.trace("Returning non-default keystore");
     return keyStore;
   }
 
