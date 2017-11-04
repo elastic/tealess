@@ -4,13 +4,11 @@ import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 
 import javax.net.ssl.SSLContext;
-
 import java.util.Arrays;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.*;
-import static org.junit.Assume.assumeFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeThat;
 
 public class SSLContextBuilderTest {
@@ -32,9 +30,9 @@ public class SSLContextBuilderTest {
     // This test can go away, I think, once we require Java 8u162 or higher, due to this being fixed: https://bugs.openjdk.java.net/browse/JDK-8170157
     SSLContext context = SSLContext.getDefault();
     List<String> supportedCiphers = Arrays.asList(context.getSupportedSSLParameters().getCipherSuites());
-    // This test assumes that the default supported ciphers does *not* include any AES 256 cipher suites.
-    assumeThat(supportedCiphers, not(CoreMatchers.hasItem(aes256suite)));
 
+    // This test assumes that the default supported ciphers does *not* include any AES 256 cipher suites (aka: "Unlimited Strength Cryptography" is missing).
+    assumeThat(supportedCiphers, not(CoreMatchers.hasItem(aes256suite)));
     try {
       builder.setCipherSuites(new String[]{aes256suite});
     } catch (IllegalArgumentException e) {
