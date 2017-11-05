@@ -20,11 +20,23 @@ apply plugin: "java"
 apply plugin: "distribution"
 apply plugin: "application"
 apply plugin: "idea"
+apply plugin: 'maven-publish'
+
+group = "co.elastic.tealess"
+version "0.1.0"
 
 mainClassName = "co.elastic.tealess.cli.Main"
 
 repositories {
   mavenCentral()
+}
+
+publishing {
+  publications {
+    mavenJava(MavenPublication) {
+      from components.java
+    }
+  }
 }
 
 dependencies {
