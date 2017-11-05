@@ -23,9 +23,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.net.ssl.*;
-import java.io.IOException;
-import java.net.Socket;
-import java.net.UnknownHostException;
 import java.security.*;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
@@ -64,6 +61,9 @@ public class SSLContextBuilder {
 
   // XXX: Do we need this method to be public?
   public void setTracker(SSLCertificateVerificationTracker tracker) {
+    if (tracker == null) {
+      throw new IllegalArgumentException("tracker cannot be null");
+    }
     this.tracker = tracker;
   }
 
@@ -79,11 +79,6 @@ public class SSLContextBuilder {
     SSLContext ctx = SSLContext.getInstance("TLS");
 
     KeyManager[] kms = null;
-
-    if (tracker == null) {
-      // XXX: We want a tracker per-socket so we can access this data during exception handling.
-      tracker = (chain, authType, exception) -> System.out.println("Server certificate chain: " + chain);
-    }
 
     if (keyManagerFactory != null) {
       kms = Arrays.stream(keyManagerFactory.getKeyManagers())
