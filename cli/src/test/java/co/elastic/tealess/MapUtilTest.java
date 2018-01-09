@@ -12,11 +12,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Created by jls on 4/7/2017.
  */
-public class MapUtilTest {
+class MapUtilTest {
     private final Map<String, Object> input = new TreeMap<>();
 
   @BeforeEach
-  public void setUp() throws Exception {
+  void setUp() throws Exception {
     input.put("hello", "world");
 
     Map<String, Object> one = new TreeMap<>();
@@ -25,7 +25,7 @@ public class MapUtilTest {
   }
 
   @Test
-  public void testFlattening() {
+  void testFlattening() {
     Map<String, Object> output = MapUtil.flattenMap(input);
 
     assertTrue(output.containsKey("one.foo"), "Flattened map should contain key 'one.foo'");

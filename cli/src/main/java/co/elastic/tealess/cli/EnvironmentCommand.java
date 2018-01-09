@@ -43,7 +43,7 @@ public class EnvironmentCommand implements Command {
   // XXX: Detect the absence of Unlimited-Stremgth Cryptography policy
   // This policy only impacts Oracle Java, not OpenJDK, but it might be nice to know.
 
-  public static Set<Protocol> getProtocols(SSLEngine engine) {
+  private static Set<Protocol> getProtocols(SSLEngine engine) {
     Set<Protocol> protocols = new TreeSet<>();
     Arrays.stream(engine.getSupportedProtocols()).forEach(name -> {
       boolean enabled = Arrays.stream(engine.getEnabledProtocols()).anyMatch(p -> p.equals(name));
@@ -52,7 +52,7 @@ public class EnvironmentCommand implements Command {
     return protocols;
   }
 
-  public static Set<CipherSuite> getCipherSuites(SSLEngine engine) {
+  private static Set<CipherSuite> getCipherSuites(SSLEngine engine) {
     Set<CipherSuite> suites = new TreeSet<>();
 
     List<String> javaAllCiphers = Arrays.asList(engine.getSupportedCipherSuites());
@@ -77,7 +77,7 @@ public class EnvironmentCommand implements Command {
     return ParserResult.success();
   }
 
-  public static SSLEngine getSSLEngine() throws Bug {
+  private static SSLEngine getSSLEngine() throws Bug {
     SSLContext ctx;
     try {
       ctx = SSLContext.getDefault();
