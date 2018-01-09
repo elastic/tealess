@@ -7,8 +7,8 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import javax.net.ssl.SSLContext;
 import java.security.KeyManagementException;
@@ -19,7 +19,7 @@ public class NettyTest {
     final SSLContextBuilder contextBuilder = new SSLContextBuilder();
     private final EventLoopGroup group = new NioEventLoopGroup();
 
-    @After
+    @AfterEach
     public void terminate() {
         group.shutdownGracefully();
     }

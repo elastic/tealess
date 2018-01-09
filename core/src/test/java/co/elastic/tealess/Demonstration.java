@@ -5,7 +5,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLHandshakeException;
@@ -19,6 +19,8 @@ import java.net.Socket;
 import java.security.*;
 import java.security.cert.CertificateException;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 public class Demonstration {
     private final SSLContextBuilder contextBuilder = new SSLContextBuilder();
     private SSLContext defaultContext;
@@ -30,15 +32,15 @@ public class Demonstration {
         defaultContext = SSLContext.getInstance("TLS");
     }
 
-    @Test(expected = SSLHandshakeException.class)
+    @Test
     public void ancientCipher() throws IOException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
         contextBuilder.setCipherSuites(new String[]{CipherSuite.TLS_KRB5_EXPORT_WITH_DES_CBC_40_MD5.name()});
         SSLContext context = contextBuilder.build();
 
-        tryHTTP(context);
+        assertThrows(SSLHandshakeException.class, () -> tryHTTP(context));
     }
 
-    @Test(expected = SSLHandshakeException.class)
+    @Test
     public void untrustedCertificate() throws IOException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, CertificateException, UnrecoverableKeyException {
         String keystorePath = SocketWrapperTest.class.getClassLoader().getResource("keystore.jks").getPath();
         KeyStoreBuilder trust = new KeyStoreBuilder();
@@ -46,10 +48,10 @@ public class Demonstration {
         contextBuilder.setTrustStore(trust.buildKeyStore());
         SSLContext context = contextBuilder.build();
 
-        tryHTTP(context);
+        assertThrows(SSLHandshakeException.class, () -> tryHTTP(context));
     }
 
-    @Test(expected = SSLHandshakeException.class)
+    @Test
     public void defaultSSLContextUntrustedCertificate() throws IOException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, CertificateException, UnrecoverableKeyException {
         String keystorePath = SocketWrapperTest.class.getClassLoader().getResource("keystore.jks").getPath();
         KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
@@ -57,7 +59,7 @@ public class Demonstration {
         tmf.init(ks);
         defaultContext.init(null, tmf.getTrustManagers(), null);
 
-        tryHTTP(defaultContext);
+        assertThrows(SSLHandshakeException.class, () -> tryHTTP(defaultContext));
     }
 
     private void tryHTTP(SSLContext context) throws IOException {
