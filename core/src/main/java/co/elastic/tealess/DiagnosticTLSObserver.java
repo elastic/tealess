@@ -52,6 +52,8 @@ public class DiagnosticTLSObserver implements TLSObserver {
     // XXX: Refactor this into things which consume Throwable
     Throwable blame = Blame.get(cause);
 
+    // TODO(sissel): Conditionally read the network log.
+
     // Use the string name of this class to avoid Java compilation warnings about referencing sun.security.provider...
     if (Objects.equals(blame.getClass().getCanonicalName(), "sun.security.provider.certpath.SunCertPathBuilderException")) {
       X509Certificate[] acceptedIssuers = trustManager.getAcceptedIssuers();
@@ -113,6 +115,11 @@ public class DiagnosticTLSObserver implements TLSObserver {
         }
 
         report.append(formatLog(messageLog));
+      } else if (blame.getMessage().matches("Received fatal alert: bad_certificate")) {
+        report.append("The server rejected our handshake because it did not trust our certificate.\n");
+        report.append("Here is a network log prior to the handshake failure:\n");
+        List<Transaction<TLSMessage>> messageLog = readLog(log, inputBuffer, outputBuffer);
+        report.append(formatLog(messageLog));
       }
 
       final SSLException diagnosis;
@@ -130,6 +137,8 @@ public class DiagnosticTLSObserver implements TLSObserver {
 
   private static List<Transaction<TLSMessage>> readLog(List<Transaction<?>> log, ByteBuffer inputBuffer, ByteBuffer outputBuffer) {
     List<Transaction<TLSMessage>> messageLog = new LinkedList<>();
+    inputBuffer.flip();
+    outputBuffer.flip();
 
 //        builder.append("Here is a network log before the failure:\n");
     int inputBytes = 0, outputBytes = 0;
@@ -290,8 +299,6 @@ public class DiagnosticTLSObserver implements TLSObserver {
 
   private void exception(Throwable cause) throws SSLException {
     recordException(cause);
-    inputBuffer.flip();
-    outputBuffer.flip();
     diagnoseException(log, inputBuffer, outputBuffer, cause, trustManagers);
   }
 
