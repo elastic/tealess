@@ -8,6 +8,7 @@ import co.elastic.tealess.tls.*;
 import javax.net.ssl.*;
 import java.lang.reflect.InvocationTargetException;
 import java.net.Socket;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateParsingException;
@@ -16,8 +17,12 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
 public class DiagnosticTLSObserver implements TLSObserver {
   private static final List<String> SupportedCipherSuites;
+  private static final Logger logger = LogManager.getLogger();
 
   static {
     List<String> ciphers;
@@ -132,6 +137,17 @@ public class DiagnosticTLSObserver implements TLSObserver {
         e.printStackTrace();
       }
       throw (SSLHandshakeException) blame;
+    } else if (cause instanceof SocketException) {
+      report.append("Network interrupted while handshaking: ");
+      report.append(cause.getClass());
+      report.append(": ");
+      report.append(cause.getMessage());
+      report.append("\n");
+      report.append("The server may have rejected our handshake because it did not trust our certificate?\n");
+      report.append("Here is a network log prior to the handshake failure:\n");
+      List<Transaction<TLSMessage>> messageLog = readLog(log, inputBuffer, outputBuffer);
+      report.append(formatLog(messageLog));
+      logger.warn("Failure: {}", report);
     }
   }
 
