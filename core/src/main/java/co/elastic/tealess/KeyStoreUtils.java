@@ -32,8 +32,8 @@ import java.util.LinkedList;
 import java.util.List;
 
 class KeyStoreUtils {
-  static final String RSA_PEM_HEADER = "-----BEGIN PRIVATE KEY-----";
-  static final String RSA_PEM_FOOTER = "-----END PRIVATE KEY-----";
+  private static final String RSA_PEM_HEADER = "-----BEGIN PRIVATE KEY-----";
+  private static final String RSA_PEM_FOOTER = "-----END PRIVATE KEY-----";
 
   public static PrivateKey loadPrivateKeyPEM(Path path) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
 

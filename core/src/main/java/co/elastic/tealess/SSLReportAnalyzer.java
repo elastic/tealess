@@ -107,7 +107,7 @@ public class SSLReportAnalyzer {
       System.out.println();
       System.out.println("The last certificate in the chain provided by the server is missing a trust anchor.");
       System.out.println("A trust anchor is what you would normally provide in a certificate authorities file " +
-        "that tells the program about SSL certificate authorities that are to be trusted when doing SSL/TLS handshakes.");
+              "that tells the program about SSL certificate authorities that are to be trusted when doing SSL/TLS handshakes.");
       System.out.println();
 
       int trustCount = 0;
@@ -135,7 +135,7 @@ public class SSLReportAnalyzer {
           try {
             tail.verify(trusted.getPublicKey());
             System.out.println();
-            System.out.printf("I did some extra digging and found the issuer of this last certificate in your system's default keystore\n");
+            System.out.print("I did some extra digging and found the issuer of this last certificate in your system's default keystore\n");
             System.out.printf("  Path to system keystore: %s\n", KeyStoreBuilder.defaultTrustStorePath);
             System.out.printf("  The system's keystore alias for the issuer is '%s'\n", alias);
           } catch (CertificateException | NoSuchAlgorithmException | InvalidKeyException | NoSuchProviderException | SignatureException e) {

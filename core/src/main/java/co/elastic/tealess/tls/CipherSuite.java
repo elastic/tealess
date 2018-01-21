@@ -332,8 +332,8 @@ public enum CipherSuite {
   TLS_DHE_PSK_WITH_CHACHA20_POLY1305_SHA256(0xCC, 0xAD), // [RFC7905]
   TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256(0xCC, 0xAE); // [RFC7905]
 
-  protected final byte b1;
-  protected final byte b2;
+  private final byte b1;
+  private final byte b2;
 
   CipherSuite(int b1, int b2) {
     this.b1 = (byte) b1;

@@ -11,12 +11,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  * Created by jls on 4/26/2017.
  */
-public class BufferUtilTest {
-    public final ByteBuffer buffer = ByteBuffer.allocate(1024);
-    private final ByteArrayOutputStream output = new ByteArrayOutputStream();
+class BufferUtilTest {
+  private final ByteBuffer buffer = ByteBuffer.allocate(1024);
+  private final ByteArrayOutputStream output = new ByteArrayOutputStream();
 
   @Test
-  public void testWrite() throws IOException {
+  void testWrite() throws IOException {
     String input = "hello world";
     buffer.put(input.getBytes());
     buffer.flip();

@@ -26,10 +26,10 @@ import java.util.List;
  * Created by jls on 2/2/17.
  */
 public class CipherSuite implements Comparable<CipherSuite> {
-  final String name;
-  final boolean enabled;
-  final boolean java;
-  boolean tcnative;
+  private final String name;
+  private final boolean enabled;
+  private final boolean java;
+  private boolean tcnative;
 
   public CipherSuite(String name, boolean enabled, boolean java) {
     this.name = name;

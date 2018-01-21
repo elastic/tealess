@@ -26,7 +26,7 @@ import co.elastic.tealess.cli.input.ArgsParser;
 /**
  * Created by jls on 1/20/17.
  */
-public interface Command {
+interface Command {
   ArgsParser getParser();
 
   void run() throws ConfigurationProblem, Bug;

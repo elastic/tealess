@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 class SSLContextBuilderTest {
-  SSLContextBuilder builder = new SSLContextBuilder();
+  private final SSLContextBuilder builder = new SSLContextBuilder();
 
   @Test
   void setCipherSuitesWithInvalidCipherSuite() throws Exception {

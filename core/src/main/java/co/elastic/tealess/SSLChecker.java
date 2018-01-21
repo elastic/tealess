@@ -49,13 +49,11 @@ public class SSLChecker {
 
   private static final int defaultTimeout = 1000;
   private static final Logger logger = LogManager.getLogger();
-    private final SSLContextBuilder ctxbuilder;
   private SSLContext ctx;
   private PeerCertificateDetails peerCertificateDetails;
 
-    public SSLChecker(SSLContextBuilder cb) throws KeyManagementException, KeyStoreException, NoSuchAlgorithmException {
+  public SSLChecker(SSLContextBuilder cb) throws KeyManagementException, KeyStoreException, NoSuchAlgorithmException {
     cb.setTracker(this::setPeerCertificateDetails);
-    ctxbuilder = cb;
     ctx = cb.build();
   }
 
@@ -71,17 +69,17 @@ public class SSLChecker {
     }
   }
 
-    private void setPeerCertificateDetails(X509Certificate[] chain, String authType, Throwable exception) {
-        peerCertificateDetails = new PeerCertificateDetails(chain, authType, exception);
-    }
+  private void setPeerCertificateDetails(X509Certificate[] chain, String authType, Throwable exception) {
+    peerCertificateDetails = new PeerCertificateDetails(chain, authType, exception);
+  }
 
-    public List<SSLReport> checkAll(InetSocketAddress address) throws ConfigurationProblem {
-        final String hostname = address.getHostString();
-        final Collection<InetAddress> addresses = getAddresses(address);
-        return addresses.stream()
-                .map(a -> check(new InetSocketAddress(a, address.getPort()), hostname))
-                .collect(Collectors.toList());
-    }
+  public List<SSLReport> checkAll(InetSocketAddress address) throws ConfigurationProblem {
+    final String hostname = address.getHostString();
+    final Collection<InetAddress> addresses = getAddresses(address);
+    return addresses.stream()
+            .map(a -> check(new InetSocketAddress(a, address.getPort()), hostname))
+            .collect(Collectors.toList());
+  }
 
   public SSLReport check(InetSocketAddress address, String name) {
     return check(address, name, defaultTimeout);
@@ -96,7 +94,7 @@ public class SSLChecker {
 
     logger.debug("Trying address {} (hostname {})", address, name);
 
-    try(Socket socket = new Socket()) {
+    try (Socket socket = new Socket()) {
       checkConnect(sslReport, socket, timeout);
       if (sslReport.getException() != null) {
         return sslReport;

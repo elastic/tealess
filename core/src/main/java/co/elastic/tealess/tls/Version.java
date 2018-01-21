@@ -4,8 +4,8 @@ package co.elastic.tealess.tls;
  * Created by jls on 4/30/2017.
  */
 public class Version {
-    private final byte major;
-    private final byte minor;
+  private final byte major;
+  private final byte minor;
 
   public Version(byte major, byte minor) {
     this.major = major;

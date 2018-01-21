@@ -23,8 +23,8 @@ package co.elastic.tealess.cli.environment;
  * Created by jls on 2/2/17.
  */
 public class Protocol implements Comparable<Protocol> {
-  final String name;
-  final boolean enabled;
+  private final String name;
+  private final boolean enabled;
 
   public Protocol(String name, boolean enabled) {
     this.name = name;

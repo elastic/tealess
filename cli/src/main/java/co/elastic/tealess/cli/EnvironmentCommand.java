@@ -24,15 +24,19 @@ import co.elastic.tealess.cli.environment.CipherSuite;
 import co.elastic.tealess.cli.environment.Protocol;
 import co.elastic.tealess.cli.input.ArgsParser;
 import co.elastic.tealess.cli.input.ParserResult;
-//import io.netty.handler.ssl.OpenSsl;
-//import io.netty.util.Version;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
+
+//import io.netty.handler.ssl.OpenSsl;
+//import io.netty.util.Version;
 
 /**
  * Created by jls on 1/20/17.
@@ -72,11 +76,6 @@ public class EnvironmentCommand implements Command {
     return suites;
   }
 
-  public ParserResult parse(String[] args) {
-    // Nothing to do. No flags.
-    return ParserResult.success();
-  }
-
   private static SSLEngine getSSLEngine() throws Bug {
     SSLContext ctx;
     try {
@@ -87,10 +86,15 @@ public class EnvironmentCommand implements Command {
     return ctx.createSSLEngine();
   }
 
+  public ParserResult parse(String[] args) {
+    // Nothing to do. No flags.
+    return ParserResult.success();
+  }
+
   @Override
   public ArgsParser getParser() {
     return new ArgsParser()
-      .setDescription("Show TLS-related environment information");
+            .setDescription("Show TLS-related environment information");
   }
 
   public void run() throws ConfigurationProblem, Bug {

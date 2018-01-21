@@ -27,7 +27,7 @@ import java.net.InetSocketAddress;
  * Created by jls on 11/16/16.
  */
 public class InetSocketAddressInput implements InputHandler<InetSocketAddress> {
-    private final int defaultPort;
+  private final int defaultPort;
 
   public InetSocketAddressInput(int defaultPort) {
     this.defaultPort = defaultPort;

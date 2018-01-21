@@ -31,8 +31,8 @@ import java.util.stream.Collectors;
 
 public class ArgsParser {
   private static final Logger logger = LogManager.getLogger();
-    private final List<Entry<?>> namedSettings = new LinkedList<>();
-    private final List<Entry<?>> positionalSettings = new LinkedList<>();
+  private final List<Entry<?>> namedSettings = new LinkedList<>();
+  private final List<Entry<?>> positionalSettings = new LinkedList<>();
   private String description;
 
   private static ParserResult parsePositional(List<Entry<?>> positionalSettings, int argi, String text) {
@@ -107,103 +107,103 @@ public class ArgsParser {
     }
   }
 
-    public ArgsParser setDescription(String description) {
-        this.description = description;
-        return this;
-    }
+  public ArgsParser setDescription(String description) {
+    this.description = description;
+    return this;
+  }
 
-    public <T> ArgsParser addNamed(Setting<T> setting, TryConsumer<T> consumer) {
-        namedSettings.add(new Entry<>(setting, consumer));
-        return this;
-    }
+  public <T> ArgsParser addNamed(Setting<T> setting, TryConsumer<T> consumer) {
+    namedSettings.add(new Entry<>(setting, consumer));
+    return this;
+  }
 
-    public <T> ArgsParser addPositional(Setting<T> setting, TryConsumer<T> consumer) {
-        positionalSettings.add(new Entry<>(setting, consumer));
-        return this;
-    }
+  public <T> ArgsParser addPositional(Setting<T> setting, TryConsumer<T> consumer) {
+    positionalSettings.add(new Entry<>(setting, consumer));
+    return this;
+  }
 
-    public ParserResult parse(String[] args) {
-        return parse(Arrays.asList(args).iterator());
-    }
+  public ParserResult parse(String[] args) {
+    return parse(Arrays.asList(args).iterator());
+  }
 
-    public ParserResult parse(Iterator<String> args) {
-        int argi = 0;
-        ParserResult result;
+  private ParserResult parse(Iterator<String> args) {
+    int argi = 0;
+    ParserResult result;
 
-        while (args.hasNext()) {
-            String input = args.next();
-            if (input.equals("--")) {
-                break;
-            }
+    while (args.hasNext()) {
+      String input = args.next();
+      if (input.equals("--")) {
+        break;
+      }
 
-            if (input.equals("--help")) {
-                return ParserResult.help();
-            }
+      if (input.equals("--help")) {
+        return ParserResult.help();
+      }
 
-            if (input.startsWith("-")) {
-                result = parseFlag(input, args, namedSettings, positionalSettings);
-                if (!result.getSuccess()) {
-                    return result;
-                }
-            } else {
-                // First non-flag argument.
-                result = parsePositional(positionalSettings, argi, input);
-                argi++;
-                if (!result.getSuccess()) {
-                    return result;
-                }
-                break;
-            }
+      if (input.startsWith("-")) {
+        result = parseFlag(input, args, namedSettings, positionalSettings);
+        if (!result.getSuccess()) {
+          return result;
         }
-
-        for (; args.hasNext(); argi++) {
-            String text = args.next();
-            result = parsePositional(positionalSettings, argi, text);
-            if (!result.getSuccess()) {
-                return result;
-            }
+      } else {
+        // First non-flag argument.
+        result = parsePositional(positionalSettings, argi, input);
+        argi++;
+        if (!result.getSuccess()) {
+          return result;
         }
-
-        if (argi < positionalSettings.size()) {
-            return ParserResult.error("Missing required argument " + positionalSettings.get(argi).getSetting().getName());
-        }
-
-        return ParserResult.success();
+        break;
+      }
     }
 
-    public void showHelp(String name) {
-        showHelp(name, description, namedSettings, positionalSettings);
+    for (; args.hasNext(); argi++) {
+      String text = args.next();
+      result = parsePositional(positionalSettings, argi, text);
+      if (!result.getSuccess()) {
+        return result;
+      }
     }
 
-    public interface TryConsumer<T> {
-        void accept(T t) throws Exception;
+    if (argi < positionalSettings.size()) {
+      return ParserResult.error("Missing required argument " + positionalSettings.get(argi).getSetting().getName());
     }
 
-    private class Entry<T> implements Parser<T>, TryConsumer<T> {
-        private final Setting<T> setting;
-        private final TryConsumer<T> consumer;
+    return ParserResult.success();
+  }
 
-        public Entry(Setting<T> setting, TryConsumer<T> consumer) {
-            this.setting = setting;
-            this.consumer = consumer;
-        }
+  public void showHelp(String name) {
+    showHelp(name, description, namedSettings, positionalSettings);
+  }
 
-        public T parse(String text) throws InvalidValue {
-            T value = setting.parse(text);
-            try {
-                consumer.accept(value);
-            } catch (Exception e) {
-                throw new InvalidValue("Given value " + value + " is not acceptable for " + setting.getName(), e);
-            }
-            return value;
-        }
+  public interface TryConsumer<T> {
+    void accept(T t) throws Exception;
+  }
 
-        public void accept(T value) throws Exception {
-            consumer.accept(value);
-        }
+  private class Entry<T> implements Parser<T>, TryConsumer<T> {
+    private final Setting<T> setting;
+    private final TryConsumer<T> consumer;
 
-        public Setting<T> getSetting() {
-            return setting;
-        }
+    Entry(Setting<T> setting, TryConsumer<T> consumer) {
+      this.setting = setting;
+      this.consumer = consumer;
     }
+
+    public T parse(String text) throws InvalidValue {
+      T value = setting.parse(text);
+      try {
+        consumer.accept(value);
+      } catch (Exception e) {
+        throw new InvalidValue("Given value " + value + " is not acceptable for " + setting.getName(), e);
+      }
+      return value;
+    }
+
+    public void accept(T value) throws Exception {
+      consumer.accept(value);
+    }
+
+    Setting<T> getSetting() {
+      return setting;
+    }
+  }
 }

@@ -67,12 +67,12 @@ public class SSLContextBuilder {
     this.tracker = tracker;
   }
 
-  public void setTrustStore(KeyStore trustStore) {
-    this.trustStore = trustStore;
-  }
-
   public KeyStore getTrustStore() {
     return this.trustStore;
+  }
+
+  public void setTrustStore(KeyStore trustStore) {
+    this.trustStore = trustStore;
   }
 
   public SSLContext build() throws KeyManagementException, KeyStoreException, NoSuchAlgorithmException {
@@ -82,14 +82,13 @@ public class SSLContextBuilder {
 
     if (keyManagerFactory != null) {
       kms = Arrays.stream(keyManagerFactory.getKeyManagers())
-        .map((km) -> new LoggingKeyManager((X509KeyManager) km))
-        .toArray(X509KeyManager[]::new);
+              .map((km) -> new LoggingKeyManager((X509KeyManager) km))
+              .toArray(X509KeyManager[]::new);
     }
 
     TrustManager[] tms = buildTrustStore();
 
     logger.trace("Building SSLContext with keys:{}, trusts:{}", kms, tms);
-
     SSLContextSpi spi = new TealessSSLContextSpi(ctx, cipherSuites);
     SSLContext tealessContext = new TealessSSLContext(spi, null, null);
     tealessContext.init(kms, tms, random);
@@ -108,10 +107,10 @@ public class SSLContextBuilder {
     }
 
     // Wrap java's TrustManagers in our own so that we can track verification failures.
-    //return Arrays.stream(tmf.getTrustManagers())
-            //.map((tm) -> new TrackingTrustManager((X509TrustManager) tm, tracker))
-            //.toArray(TrustManager[]::new);
-    return tmf.getTrustManagers();
+    return Arrays.stream(tmf.getTrustManagers())
+            .map((tm) -> new TrackingTrustManager((X509TrustManager) tm, tracker))
+            .toArray(TrustManager[]::new);
+//    return tmf.getTrustManagers();
   }
 
   public void setKeyManagerFactory(KeyManagerFactory keyManagerFactory) {
@@ -175,7 +174,7 @@ public class SSLContextBuilder {
   }
 
   private boolean isValidProtocol(String protocol) {
-    for (String supportedProtocol: supportedParameters.getProtocols()) {
+    for (String supportedProtocol : supportedParameters.getProtocols()) {
       if (protocol.equals(supportedProtocol)) {
         return true;
       }

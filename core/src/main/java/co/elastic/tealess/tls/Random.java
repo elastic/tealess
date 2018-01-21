@@ -11,7 +11,7 @@ public class Random {
   private final long time;
   private final byte[] random;
 
-  public Random(long time, byte[] random) {
+  private Random(long time, byte[] random) {
     this.time = time;
     this.random = random;
   }

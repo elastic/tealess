@@ -16,6 +16,6 @@ public class TLSDecoder {
   }
 
   public static Alert decodeAlert(ByteBuffer buffer) throws InvalidValue {
-      return new Alert(AlertLevel.forValue(buffer.get()), AlertDescription.forValue(buffer.get()));
+    return new Alert(AlertLevel.forValue(buffer.get()), AlertDescription.forValue(buffer.get()));
   }
 }

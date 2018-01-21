@@ -34,23 +34,23 @@ public class BeatsCommand implements Command {
   private static final Logger logger = LogManager.getLogger();
   private static final String DESCRIPTION = "Test TLS settings from an Elastic Beats configuration.";
   // Beats output configuration sections to analyze.
-  private final String[] outputs = { "logstash", "elasticsearch", "redis", "kafka" };
+  private final String[] outputs = {"logstash", "elasticsearch", "redis", "kafka"};
   private Path settingsPath = null;
 
-  public void setSettingsPath(Path path) {
+  private void setSettingsPath(Path path) {
     settingsPath = path;
   }
 
   @Override
   public ArgsParser getParser() {
     return new ArgsParser()
-      .setDescription(DESCRIPTION)
-      .addPositional(new Setting<>("settings", "The path to the beats yaml", PathInput.singleton), this::setSettingsPath);
+            .setDescription(DESCRIPTION)
+            .addPositional(new Setting<>("settings", "The path to the beats yaml", PathInput.singleton), this::setSettingsPath);
   }
 
   @Override
   public void run() throws ConfigurationProblem, Bug {
-   Yaml yaml = new Yaml();
+    Yaml yaml = new Yaml();
     Map<String, Object> settings;
     try {
       settings = (Map<String, Object>) yaml.load(new FileReader(settingsPath.toFile()));
@@ -98,7 +98,7 @@ public class BeatsCommand implements Command {
 
     // XXX: the 'elasticsearch' output supports URLs. Probably should handle this.
     InetSocketAddressInput addressInput = new InetSocketAddressInput(-1); // no default port
-    for (String address : ((List<String>)flatSettings.get(settingsPrefix + ".hosts"))) {
+    for (String address : ((List<String>) flatSettings.get(settingsPrefix + ".hosts"))) {
       Collection<InetAddress> addresses;
       InetSocketAddress inetAddress = addressInput.parse(address);
 
@@ -117,8 +117,8 @@ public class BeatsCommand implements Command {
 
       System.out.printf("%s resolved to %d addresses\n\n", hostname, addresses.size());
       List<SSLReport> reports = addresses.stream()
-        .map(a -> checker.check(new InetSocketAddress(a, inetAddress.getPort()), hostname))
-        .collect(Collectors.toList());
+              .map(a -> checker.check(new InetSocketAddress(a, inetAddress.getPort()), hostname))
+              .collect(Collectors.toList());
 
       SSLReportAnalyzer.analyzeMany(reports);
     }

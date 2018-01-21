@@ -7,17 +7,17 @@ import java.nio.ByteOrder;
  * Created by jls on 4/13/2017.
  */
 public class TLSPlaintext implements TLSMessage {
-    final int length; // length is uint16 in the spec, but Java has no unsigned types, so we use int.
+  private final int length; // length is uint16 in the spec, but Java has no unsigned types, so we use int.
   private final ByteBuffer payload;
-    private final ContentType contentType;
-    private final Version version;
+  private final ContentType contentType;
+  private final Version version;
 
-    public TLSPlaintext(ContentType contentType, Version version, int length, ByteBuffer payload) {
-        this.contentType = contentType;
-        this.version = version;
-        this.length = length;
-        this.payload = payload;
-    }
+  private TLSPlaintext(ContentType contentType, Version version, int length, ByteBuffer payload) {
+    this.contentType = contentType;
+    this.version = version;
+    this.length = length;
+    this.payload = payload;
+  }
 
   public static TLSPlaintext parse(ByteBuffer buffer) throws InvalidValue {
     buffer.order(ByteOrder.BIG_ENDIAN);

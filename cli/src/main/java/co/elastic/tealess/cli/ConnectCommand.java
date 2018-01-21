@@ -50,9 +50,9 @@ public class ConnectCommand implements Command {
   private static final String DESCRIPTION = "Connect to an address with SSL/TLS and diagnose the result.";
   private final KeyStoreBuilder keys;
   private final KeyStoreBuilder trust;
-  private final Path keyStore = null;
   private InetSocketAddress address = null;
-  public ConnectCommand() throws Bug {
+
+  ConnectCommand() throws Bug {
     try {
       keys = new KeyStoreBuilder();
       trust = new KeyStoreBuilder();
@@ -80,22 +80,18 @@ public class ConnectCommand implements Command {
   }
 
   private void setKeyStore(Path path) throws UnrecoverableKeyException, CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException {
-    if (keyStore != null) {
-      keys.useKeyStore(keyStore.toFile());
-    } else {
-      keys.empty();
-    }
+    keys.useKeyStore(path.toFile());
   }
 
   @Override
   public ArgsParser getParser() {
     return new ArgsParser()
-      .setDescription(DESCRIPTION)
-      .addNamed(new Setting<Level>("log-level", "The log level").setDefaultValue(Level.WARN).parseWith(Level::valueOf), LogUtils::setLogLevel)
-      .addNamed(new Setting<Path>("capath", "The path to a file containing one or more certificates to trust in PEM format.").parseWith(Paths::get), this::setCAPath)
-      .addNamed(new Setting<Path>("truststore", "The path to a java keystore or pkcs12 file containing certificate authorities to trust").parseWith(Paths::get), this::setTrustStore)
-      .addNamed(new Setting<Path>("keystore", "The path to a java keystore or pkcs12 file containing private key(s) and client certificates to use when connecting to a remote server.").parseWith(Paths::get), this::setKeyStore)
-      .addPositional(new Setting<>("address", "The address in form of `host` or `host:port` to connect", new InetSocketAddressInput(443)), this::setAddress);
+            .setDescription(DESCRIPTION)
+            .addNamed(new Setting<Level>("log-level", "The log level").setDefaultValue(Level.WARN).parseWith(Level::valueOf), LogUtils::setLogLevel)
+            .addNamed(new Setting<Path>("capath", "The path to a file containing one or more certificates to trust in PEM format.").parseWith(Paths::get), this::setCAPath)
+            .addNamed(new Setting<Path>("truststore", "The path to a java keystore or pkcs12 file containing certificate authorities to trust").parseWith(Paths::get), this::setTrustStore)
+            .addNamed(new Setting<Path>("keystore", "The path to a java keystore or pkcs12 file containing private key(s) and client certificates to use when connecting to a remote server.").parseWith(Paths::get), this::setKeyStore)
+            .addPositional(new Setting<>("address", "The address in form of `host` or `host:port` to connect", new InetSocketAddressInput(443)), this::setAddress);
   }
 
   @Override
@@ -127,8 +123,8 @@ public class ConnectCommand implements Command {
 
     System.out.printf("%s resolved to %d addresses\n", hostname, addresses.size());
     List<SSLReport> reports = addresses.stream()
-      .map(a -> checker.check(new InetSocketAddress(a, address.getPort()), hostname))
-      .collect(Collectors.toList());
+            .map(a -> checker.check(new InetSocketAddress(a, address.getPort()), hostname))
+            .collect(Collectors.toList());
 
     System.out.println();
 

@@ -25,7 +25,7 @@ import java.util.Arrays;
 import java.util.Collection;
 
 public interface Resolver {
-  Collection<InetAddress> resolve(String name) throws UnknownHostException;
-
   Resolver SystemResolver = (String name) -> Arrays.asList(InetAddress.getAllByName(name));
+
+  Collection<InetAddress> resolve(String name) throws UnknownHostException;
 }

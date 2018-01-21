@@ -18,7 +18,7 @@ public enum ClientCertificateType {
   RSAFixedECDH((byte) 65), // RFC 4492
   ECDSAFixedECDH((byte) 66); // RFC 4492
 
-  protected final byte value;
+  private final byte value;
 
   ClientCertificateType(byte value) {
     this.value = value;

@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Created by jls on 4/7/2017.
  */
 class MapUtilTest {
-    private final Map<String, Object> input = new TreeMap<>();
+  private final Map<String, Object> input = new TreeMap<>();
 
   @BeforeEach
   void setUp() throws Exception {

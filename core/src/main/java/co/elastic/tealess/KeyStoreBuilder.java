@@ -39,22 +39,18 @@ import java.util.Arrays;
 import java.util.Collection;
 
 public class KeyStoreBuilder {
-  private static final String keyManagerAlgorithm = KeyManagerFactory.getDefaultAlgorithm();
-
   // Based on some quick research, this appears to be the default java trust store location
   public static final Path defaultTrustStorePath = Paths.get(System.getProperty("java.home"), "lib", "security", "cacerts");
-
+  private static final String keyManagerAlgorithm = KeyManagerFactory.getDefaultAlgorithm();
   // 'changeit' appears to be the default passphrase. I suppose it's ok. Or is it?!!!
   private static final char[] defaultTrustStorePassphrase = "changeit".toCharArray();
-
-  private boolean modified;
-  private KeyStore keyStore;
-  private KeyManagerFactory keyManagerFactory;
   private static final Logger logger = LogManager.getLogger();
-
   // the "hurray" passphrase is only to satisfy the KeyStore.load API
   // (requires a passphrase, even when loading null).
   private final char[] IN_MEMORY_KEYSTORE_PASSPHRASE = "hurray".toCharArray();
+  private boolean modified;
+  private KeyStore keyStore;
+  private KeyManagerFactory keyManagerFactory;
 
   public KeyStoreBuilder() throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException, UnrecoverableKeyException {
     keyManagerFactory = KeyManagerFactory.getInstance(keyManagerAlgorithm);
@@ -123,7 +119,7 @@ public class KeyStoreBuilder {
     }
   }
 
-  void addCAPath(File file) throws CertificateException, IOException, KeyStoreException {
+  private void addCAPath(File file) throws CertificateException, IOException, KeyStoreException {
     for (Certificate cert : parseCertificatesPath(file.toPath())) {
       logger.debug("Loaded certificate from {}: {}", file, ((X509Certificate) cert).getSubjectX500Principal());
       String alias = ((X509Certificate) cert).getSubjectX500Principal().toString();
@@ -132,7 +128,7 @@ public class KeyStoreBuilder {
     modified = true;
   }
 
-  Collection<? extends Certificate> parseCertificatesPath(Path path) throws IOException, CertificateException {
+  private Collection<? extends Certificate> parseCertificatesPath(Path path) throws IOException, CertificateException {
     CertificateFactory cf = CertificateFactory.getInstance("X.509");
     try (FileInputStream in = new FileInputStream(path.toFile())) {
       return cf.generateCertificates(in);
