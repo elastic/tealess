@@ -37,27 +37,22 @@ public class TealessSSLContextBuilder {
   private static final Logger logger = LogManager.getLogger();
 
   private static final SSLCertificateVerificationTracker defaultTracker = (chain, authType, exception) -> System.out.println("Server certificate chain: " + chain);
-  private static final SSLParameters defaultParameters;
-  private static final SSLParameters supportedParameters;
+  private static final SSLContext defaultContext;
 
   static {
-    final SSLContext defaultContext;
     try {
       defaultContext = SSLContext.getDefault();
     } catch (NoSuchAlgorithmException e) {
       // A java.lang.Error feels appropriate for this kind of catastrophic failure.
       throw new Error("SSLContext.getDefault() failed. This means something is very wrong, and unexpected, with the JVM or its configuration.", e);
     }
-
-    defaultParameters = defaultContext.getDefaultSSLParameters();
-    supportedParameters = defaultContext.getSupportedSSLParameters();
   }
 
   // XXX: I don't see a strong reason for someone to want to provide their own. Maybe during testing?
   private final SecureRandom random = new SecureRandom();
   private SSLCertificateVerificationTracker tracker = defaultTracker;
-  private String[] cipherSuites = defaultParameters.getCipherSuites();
-  private String[] protocols = defaultParameters.getProtocols();
+  private String[] cipherSuites = defaultContext.getDefaultSSLParameters().getCipherSuites();
+  private String[] protocols = defaultContext.getSupportedSSLParameters().getProtocols();
 
   private KeyStore trustStore;
   private KeyManagerFactory keyManagerFactory;
@@ -76,7 +71,6 @@ public class TealessSSLContextBuilder {
 
   /**
    * Get the {@link KeyStore} used for trust verification.
-   *
    * @return
    */
   public KeyStore getTrustStore() {
@@ -146,26 +140,24 @@ public class TealessSSLContextBuilder {
 
   /**
    * Set the ciphersuites to enable.
-   *
    * @param cipherSuites
    * @throws IllegalArgumentException
    * @throws NoSuchAlgorithmException
    */
-  public void setCipherSuites(String[] cipherSuites) throws IllegalArgumentException, NoSuchAlgorithmException {
+  public void setCipherSuites(String[] cipherSuites) throws IllegalArgumentException {
+    final SSLEngine sslEngine = defaultContext.createSSLEngine(); // for checking valid ciphers
     for (String cipherSuite : cipherSuites) {
       if (!isValidCipherSuite(cipherSuite)) {
         // XXX: do special handling if this cipher suite is known to be enabled by Oracle's JCE Unlimited Strength Encryption
         // ^^^ It'd be nice to notify the user of the obvious remediation if we know this is unsupported because of Oracle's JCE USC.
         // If the ciphersuite is known but probably disabled because the user is using Oracle JRE without JCE Unlimited Strength installed
         try {
-          SSLContext c = SSLContext.getDefault();
-          SSLEngine sslEngine = c.createSSLEngine();
           sslEngine.setEnabledCipherSuites(new String[]{"TLS_RSA_WITH_AES_256_CBC_SHA256"});
         } catch (IllegalArgumentException e) {
           // Wrap the IllegalArgumentException message in something that includes more context for the user.
           if (e.getMessage().startsWith("Unsupported ciphersuite " + cipherSuite)) {
             // probably an unknown or invalid cipher suite name.
-            throw new IllegalArgumentException(e.getMessage() + ". Supported cipher suites are: " + Arrays.asList(supportedParameters.getCipherSuites()));
+            throw new IllegalArgumentException(e.getMessage() + ". Supported cipher suites are: " + Arrays.asList(defaultContext.getSupportedSSLParameters().getCipherSuites()));
           } else if (e.getMessage().equals("Cannot support " + cipherSuite + " with currently installed providers")) {
             // This likely means the user is asking for a cipher that is disabled by some Java configuration.
             // In my testing, I found this occurred when using Oracle Java *without* the Unlimited Strength Cryptography policy installed.
@@ -173,23 +165,21 @@ public class TealessSSLContextBuilder {
             // This only impacts Oracle JVM, not OpenJDK.
             // This check should only be needed for older Java 8 releases since Unlimited Strength is now default: https://bugs.openjdk.java.net/browse/JDK-8170157
             if (System.getProperty("java.runtime.name").equals(ORACLE_JVM_RUNTIME_NAME)) {
-              throw new IllegalArgumentException(e.getMessage() + ". This probably means you need to install the Oracle Java Cryptography Extension Unlimited Strength Cryptographic Policy. Supported cipher suites are: " + Arrays.asList(supportedParameters.getCipherSuites()));
+              throw new IllegalArgumentException(e.getMessage() + ". This probably means you need to install the Oracle Java Cryptography Extension Unlimited Strength Cryptographic Policy. Supported cipher suites are: " + Arrays.asList(defaultContext.getSupportedSSLParameters().getCipherSuites()));
             } else {
-              throw new IllegalArgumentException(e.getMessage() + ". Supported cipher suites are: " + Arrays.asList(supportedParameters.getCipherSuites()));
+              throw new IllegalArgumentException(e.getMessage() + ". Supported cipher suites are: " + Arrays.asList(defaultContext.getSupportedSSLParameters().getCipherSuites()));
             }
           }
-        } catch (NoSuchAlgorithmException e) {
-          throw e;
         }
 
-        throw new IllegalArgumentException("The cipher suite '" + cipherSuite + "' is not supported. Supported cipher suites are: " + Arrays.asList(supportedParameters.getCipherSuites()));
+        throw new IllegalArgumentException("The cipher suite '" + cipherSuite + "' is not supported. Supported cipher suites are: " + Arrays.asList(defaultContext.getSupportedSSLParameters().getCipherSuites()));
       }
     }
     this.cipherSuites = cipherSuites;
   }
 
   private boolean isValidCipherSuite(String cipherSuite) {
-    for (String suite : supportedParameters.getCipherSuites()) {
+    for (String suite : defaultContext.getSupportedSSLParameters().getCipherSuites()) {
       if (cipherSuite.equals(suite)) {
         return true;
       }
@@ -204,7 +194,7 @@ public class TealessSSLContextBuilder {
   public void setProtocols(String[] protocols) {
     for (String protocol : protocols) {
       if (!isValidProtocol(protocol)) {
-        throw new IllegalArgumentException("The protocol '" + protocol + "' is not supported. Supported protocols are: " + Arrays.asList(supportedParameters.getCipherSuites()));
+        throw new IllegalArgumentException("The protocol '" + protocol + "' is not supported. Supported protocols are: " + Arrays.asList(defaultContext.getSupportedSSLParameters().getCipherSuites()));
       }
     }
 
@@ -212,7 +202,7 @@ public class TealessSSLContextBuilder {
   }
 
   private boolean isValidProtocol(String protocol) {
-    for (String supportedProtocol : supportedParameters.getProtocols()) {
+    for (String supportedProtocol : defaultContext.getSupportedSSLParameters().getProtocols()) {
       if (protocol.equals(supportedProtocol)) {
         return true;
       }
