@@ -112,7 +112,7 @@ public class SSLReportAnalyzer {
 
       int trustCount = 0;
       try {
-        trustCount = report.getSSLContextBuilder().getTrustStore().size();
+        trustCount = report.getTealessSSLContextBuilder().getTrustStore().size();
       } catch (KeyStoreException e) {
         System.out.println("An error occurred while trying to read the trust store: " + e);
         e.printStackTrace();

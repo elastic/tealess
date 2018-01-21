@@ -52,7 +52,7 @@ public class SSLChecker {
   private SSLContext ctx;
   private PeerCertificateDetails peerCertificateDetails;
 
-  public SSLChecker(SSLContextBuilder cb) throws KeyManagementException, KeyStoreException, NoSuchAlgorithmException {
+  public SSLChecker(TealessSSLContextBuilder cb) throws KeyManagementException, KeyStoreException, NoSuchAlgorithmException {
     cb.setTracker(this::setPeerCertificateDetails);
     ctx = cb.build();
   }

@@ -12,8 +12,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
-class SSLContextBuilderTest {
-  private final SSLContextBuilder builder = new SSLContextBuilder();
+class TealessSSLContextBuilderTest {
+  private final TealessSSLContextBuilder builder = new TealessSSLContextBuilder();
 
   @Test
   void setCipherSuitesWithInvalidCipherSuite() throws Exception {

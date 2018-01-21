@@ -37,7 +37,7 @@ public class SSLReport {
   private String hostname;
   private boolean hostnameVerified;
   private long timeout;
-  private co.elastic.tealess.SSLContextBuilder SSLContextBuilder;
+  private TealessSSLContextBuilder TealessSSLContextBuilder;
 
   SSLReport() {
     // Nothing
@@ -111,12 +111,12 @@ public class SSLReport {
     this.timeout = timeout;
   }
 
-  public SSLContextBuilder getSSLContextBuilder() {
-    return SSLContextBuilder;
+  public TealessSSLContextBuilder getTealessSSLContextBuilder() {
+    return TealessSSLContextBuilder;
   }
 
-  public void setSSLContextBuilder(SSLContextBuilder SSLContextBuilder) {
-    this.SSLContextBuilder = SSLContextBuilder;
+  public void setTealessSSLContextBuilder(TealessSSLContextBuilder tealessSSLContextBuilder) {
+    this.TealessSSLContextBuilder = tealessSSLContextBuilder;
   }
 
 }

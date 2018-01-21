@@ -187,7 +187,7 @@ public class TrustCommand implements Command {
       throw new Bug("'new KeyStoreBuilder' failed", e);
     }
 
-    final SSLContextBuilder cb = new SSLContextBuilder();
+    final TealessSSLContextBuilder cb = new TealessSSLContextBuilder();
     try {
       cb.setTrustStore(trust.buildKeyStore());
       cb.setKeyManagerFactory(keys.buildKeyManagerFactory());

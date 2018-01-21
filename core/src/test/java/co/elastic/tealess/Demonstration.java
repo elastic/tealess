@@ -22,7 +22,7 @@ import java.security.cert.CertificateException;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class Demonstration {
-  private final SSLContextBuilder contextBuilder = new SSLContextBuilder();
+  private final TealessSSLContextBuilder contextBuilder = new TealessSSLContextBuilder();
   private SSLContext defaultContext;
 
   private TrustManagerFactory tmf;

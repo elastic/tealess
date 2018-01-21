@@ -96,7 +96,7 @@ public class ConnectCommand implements Command {
 
   @Override
   public void run() throws ConfigurationProblem, Bug {
-    SSLContextBuilder cb = new SSLContextBuilder();
+    TealessSSLContextBuilder cb = new TealessSSLContextBuilder();
     try {
       cb.setTrustStore(trust.buildKeyStore());
       cb.setKeyManagerFactory(keys.buildKeyManagerFactory());

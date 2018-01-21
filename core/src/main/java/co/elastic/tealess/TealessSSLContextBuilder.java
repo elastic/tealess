@@ -27,7 +27,10 @@ import java.security.*;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 
-public class SSLContextBuilder {
+/**
+ * Build an SSLContext which tries to provide actionable error messages upon SSL/TLS failures.
+ */
+public class TealessSSLContextBuilder {
   private static final String ORACLE_JVM_RUNTIME_NAME = "Java(TM) SE Runtime Environment";
 
   private static final String trustManagerAlgorithm = TrustManagerFactory.getDefaultAlgorithm();
@@ -59,7 +62,11 @@ public class SSLContextBuilder {
   private KeyStore trustStore;
   private KeyManagerFactory keyManagerFactory;
 
-  // XXX: Do we need this method to be public?
+  /**
+   * Set the certificate chain tracker.
+   *
+   * @param tracker {@link SSLCertificateVerificationTracker}
+   */
   public void setTracker(SSLCertificateVerificationTracker tracker) {
     if (tracker == null) {
       throw new IllegalArgumentException("tracker cannot be null");
@@ -67,14 +74,30 @@ public class SSLContextBuilder {
     this.tracker = tracker;
   }
 
+  /**
+   * Get the {@link KeyStore} used for trust verification.
+   *
+   * @return
+   */
   public KeyStore getTrustStore() {
     return this.trustStore;
   }
 
+  /**
+   * Set the {@link KeyStore} used for trust verification.
+   */
   public void setTrustStore(KeyStore trustStore) {
     this.trustStore = trustStore;
   }
 
+  /**
+   * Build an {@link SSLContext}  based on the parameters set in this TealessSSLContextBuilder.
+   *
+   * @return {@link SSLContext}
+   * @throws KeyManagementException
+   * @throws KeyStoreException
+   * @throws NoSuchAlgorithmException
+   */
   public SSLContext build() throws KeyManagementException, KeyStoreException, NoSuchAlgorithmException {
     SSLContext ctx = SSLContext.getInstance("TLS");
 
@@ -113,11 +136,22 @@ public class SSLContextBuilder {
 //    return tmf.getTrustManagers();
   }
 
+  /**
+   * Set the {@link KeyManagerFactory} to use. The factory's {@link KeyManager}s will be wrapped with {@link LoggingKeyManager}.
+   * @param keyManagerFactory
+   */
   public void setKeyManagerFactory(KeyManagerFactory keyManagerFactory) {
     this.keyManagerFactory = keyManagerFactory;
   }
 
-  public void setCipherSuites(String[] cipherSuites) throws IllegalArgumentException {
+  /**
+   * Set the ciphersuites to enable.
+   *
+   * @param cipherSuites
+   * @throws IllegalArgumentException
+   * @throws NoSuchAlgorithmException
+   */
+  public void setCipherSuites(String[] cipherSuites) throws IllegalArgumentException, NoSuchAlgorithmException {
     for (String cipherSuite : cipherSuites) {
       if (!isValidCipherSuite(cipherSuite)) {
         // XXX: do special handling if this cipher suite is known to be enabled by Oracle's JCE Unlimited Strength Encryption
@@ -145,7 +179,7 @@ public class SSLContextBuilder {
             }
           }
         } catch (NoSuchAlgorithmException e) {
-          e.printStackTrace();
+          throw e;
         }
 
         throw new IllegalArgumentException("The cipher suite '" + cipherSuite + "' is not supported. Supported cipher suites are: " + Arrays.asList(supportedParameters.getCipherSuites()));
@@ -163,6 +197,10 @@ public class SSLContextBuilder {
     return false;
   }
 
+  /**
+   * Set the protocols to enable. For example, "TLS 1.2", etc.
+   * @param protocols
+   */
   public void setProtocols(String[] protocols) {
     for (String protocol : protocols) {
       if (!isValidProtocol(protocol)) {
@@ -183,6 +221,15 @@ public class SSLContextBuilder {
   }
 
   public interface SSLCertificateVerificationTracker {
+    /**
+     * This method is invoked whenever any peer certificate is being checked and is invoked for both success and failure scenarios.
+     *
+     * If the verification failed, `exception` will be non-null.
+     *
+     * @param chain The certificate chain provided by the remote system.
+     * @param authType The authType value {@link X509TrustManager.checkServerTrusted}
+     * @param exception The CertificatException if the verification failed. Otherwise, null.
+     */
     void track(X509Certificate[] chain, String authType, Throwable exception);
   }
-} // SSLContextBuilder
+} // TealessSSLContextBuilder

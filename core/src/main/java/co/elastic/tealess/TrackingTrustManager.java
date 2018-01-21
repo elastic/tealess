@@ -26,9 +26,9 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
 class TrackingTrustManager extends X509ExtendedTrustManagerProxy {
-  private final SSLContextBuilder.SSLCertificateVerificationTracker tracker;
+  private final TealessSSLContextBuilder.SSLCertificateVerificationTracker tracker;
 
-  public TrackingTrustManager(X509TrustManager trustManager, SSLContextBuilder.SSLCertificateVerificationTracker tracker) {
+  public TrackingTrustManager(X509TrustManager trustManager, TealessSSLContextBuilder.SSLCertificateVerificationTracker tracker) {
     super((X509ExtendedTrustManager) trustManager);
     this.tracker = tracker;
   }

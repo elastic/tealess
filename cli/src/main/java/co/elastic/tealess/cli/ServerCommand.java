@@ -3,7 +3,7 @@ package co.elastic.tealess.cli;
 import co.elastic.tealess.Bug;
 import co.elastic.tealess.ConfigurationProblem;
 import co.elastic.tealess.KeyStoreBuilder;
-import co.elastic.tealess.SSLContextBuilder;
+import co.elastic.tealess.TealessSSLContextBuilder;
 import co.elastic.tealess.cli.input.ArgsParser;
 import co.elastic.tealess.cli.input.InetSocketAddressInput;
 import io.netty.bootstrap.Bootstrap;
@@ -84,7 +84,7 @@ public class ServerCommand implements Command {
 
   @Override
   public void run() throws ConfigurationProblem, Bug {
-    SSLContextBuilder cb = new SSLContextBuilder();
+    TealessSSLContextBuilder cb = new TealessSSLContextBuilder();
     try {
       cb.setTrustStore(trust.buildKeyStore());
       cb.setKeyManagerFactory(keys.buildKeyManagerFactory());

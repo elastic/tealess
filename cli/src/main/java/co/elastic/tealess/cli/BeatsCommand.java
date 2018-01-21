@@ -80,7 +80,7 @@ public class BeatsCommand implements Command {
     processCertificateAuthorities(flatSettings, settingsPrefix, trust);
     processClientCertificate(flatSettings, settingsPrefix, keys);
 
-    SSLContextBuilder cb = new SSLContextBuilder();
+    TealessSSLContextBuilder cb = new TealessSSLContextBuilder();
     try {
       cb.setTrustStore(trust.buildKeyStore());
       cb.setKeyManagerFactory(keys.buildKeyManagerFactory());

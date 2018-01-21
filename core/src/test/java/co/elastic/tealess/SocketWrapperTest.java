@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
 class SocketWrapperTest {
-  private final SSLContextBuilder contextBuilder = new SSLContextBuilder();
+  private final TealessSSLContextBuilder contextBuilder = new TealessSSLContextBuilder();
 
   @Test
   void ancientCipherWithApache() throws IOException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
