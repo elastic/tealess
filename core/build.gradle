@@ -35,4 +35,9 @@ dependencies {
     testRuntime group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.0.2'
 
     testCompile group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.1'
+
+    // Without the apiguardian dependency, the following warning occurs during builds:
+    //   warning: unknown enum constant Status.STABLE
+    //   reason: class file for org.apiguardian.api.API$Status not found
+    testCompile group: 'org.apiguardian', name: 'apiguardian-api', version: '1.0.0'
 }
