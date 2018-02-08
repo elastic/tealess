@@ -1,10 +1,14 @@
-version '0.1.0'
-
 apply plugin: 'java'
 apply plugin: 'application'
+apply plugin: 'distribution'
 
 mainClassName = "co.elastic.tealess.cli.Main"
 
+distributions {
+    main {
+        baseName = 'tealess'
+    }
+}
 repositories {
     mavenCentral()
 }
