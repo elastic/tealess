@@ -110,3 +110,13 @@ There are two outputs of this builder:
 
 * KeyStore: `ksb.buildKeyStore()`
 * KeyManagerFactory: `ksb.buildKeyManagerFactory()`
+
+### Example: Client Socket
+
+```
+TealessSSLContextBuilder cb = new TealessSSLContextBuilder():
+SSLContext ctx = cb.build();
+
+Socket socket = ctx.getSocketFactory().createSocket("google.com", 443);
+...
+```
