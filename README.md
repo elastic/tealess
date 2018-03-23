@@ -53,9 +53,20 @@ This will put the result in `.cli//build/distributions` as `tealess.zip` or `tea
 
 This library provides an SSLContext that catches any thrown exception and tries to provide a human-readable and actionable report. It does this by wrapping the default SSLContext provided by Java crypto.
 
+Both SSLSocket- and SSLEngine-style usages are supported.
+
 Exception handling is primarily targeted at the SSL/TLS Handshake as this is where most of the problems will happen for users.
 
-When an exception is thrown
+### Implementation Details
+
+During the handshake, this library writes the wire-bytes into a ByteBuffer for both directions of communication.
+
+* For SSLEngine, see [TealessSSLEngine](https://github.com/elastic/tealess/blob/master/core/src/main/java/co/elastic/tealess/TealessSSLEngine.java#L20-L21).
+* For Client Sockets: Tealess's SSLContext.getSocketFactory() returns a [TealessSSLSocketFactory](https://github.com/elastic/tealess/blob/master/core/src/main/java/co/elastic/tealess/TealessSSLSocketFactory.java#L50-L113) which wraps `Socket`s with a [DiagnosticTLSObserver](https://github.com/elastic/tealess/blob/master/core/src/main/java/co/elastic/tealess/DiagnosticTLSObserver.java) which is responsible for capturing input and output wire data as well as catching and diagnosing exceptions.
+* :x: For Server Sockets: Tealess's SSLContext.getServerSocketFactory() returns a [TealessSSLServerSocketFactory](https://github.com/elastic/tealess/blob/master/core/src/main/java/co/elastic/tealess/TealessSSLServerSocketFactory.java) which is [not implemented yet](https://github.com/elastic/tealess/blob/master/core/src/main/java/co/elastic/tealess/TealessSSLServerSocket.java)
+* For SSL Engine: Tealess's SSLContext.createSSLEngine returns a [TealessSSLEngine](https://github.com/elastic/tealess/blob/master/core/src/main/java/co/elastic/tealess/TealessSSLEngine.java) which captures wire [reads and writes](https://github.com/elastic/tealess/blob/master/core/src/main/java/co/elastic/tealess/TealessSSLEngine.java#L57-L70). [Exceptions](https://github.com/elastic/tealess/blob/master/core/src/main/java/co/elastic/tealess/TealessSSLEngine.java#L154-L157) are enriched with diagnostics.
+
+Exception diagnostic is handled in [DiagnosticTLSObserver](https://github.com/elastic/tealess/blob/master/core/src/main/java/co/elastic/tealess/DiagnosticTLSObserver.java). Wire data is recorded in an in-memory log. This log is examined first for the exception and then backtracked to inspect the network data with the goal of providing an actionable diagnosis for the user.
 
 ## API Usage
 
