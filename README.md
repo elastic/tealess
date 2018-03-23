@@ -131,3 +131,10 @@ SSLContext ctx = cb.build();
 Socket socket = ctx.getSocketFactory().createSocket("google.com", 443);
 ...
 ```
+
+Other examples may be found in the unit tests:
+
+* [Demonstration](https://github.com/elastic/tealess/blob/master/core/src/test/java/co/elastic/tealess/Demonstration.java) uses Tealess with [Apache HC's HttpClient](https://hc.apache.org/httpcomponents-client-ga/).
+* [SocketWrapperTest](https://github.com/elastic/tealess/blob/master/core/src/test/java/co/elastic/tealess/SocketWrapperTest.java) both Apache HttpClient and `SSLContext.createSocketFactory().createSocket(host, port)`
+* [NettyTest](https://github.com/elastic/tealess/blob/master/core/src/test/java/co/elastic/tealess/netty/NettyTest.java) uses Tealess with Netty to make a HTTP request.
+
