@@ -59,7 +59,7 @@ Exception handling is primarily targeted at the SSL/TLS Handshake as this is whe
 
 ## Implementation Details
 
-Because of the somewhat convoluted nature of Java's SSLContext and SSL APIs, most(?) of the code in this repository are object proxies necessary to capture wire data and enrich exceptions.
+Because of the somewhat convoluted nature of Java's SSLContext and SSL APIs, most(?) of the code in this repository are object proxies necessary to capture wire data and enrich exceptions. For example, to capture the inbound data of SSLSocket's InputStream, we go SSLContext -> SSLContextSpi -> SSLSocketFactory -> SSLSocket -> SSLSocket.getInputStream() where almost all of the .java files in this path are code-generated proxy classes passing a thing down the stack.
 
 During the handshake, this library writes the wire-bytes into a ByteBuffer for both directions of communication.
 
