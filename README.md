@@ -59,6 +59,8 @@ Exception handling is primarily targeted at the SSL/TLS Handshake as this is whe
 
 ### Implementation Details
 
+Because of the somewhat convoluted nature of Java's SSLContext and SSL APIs, most(?) of the code in this repository are object proxies necessary to capture wire data and enrich exceptions.
+
 During the handshake, this library writes the wire-bytes into a ByteBuffer for both directions of communication.
 
 * For SSLEngine, see [TealessSSLEngine](https://github.com/elastic/tealess/blob/master/core/src/main/java/co/elastic/tealess/TealessSSLEngine.java#L20-L21).
@@ -67,6 +69,8 @@ During the handshake, this library writes the wire-bytes into a ByteBuffer for b
 * For SSL Engine: Tealess's SSLContext.createSSLEngine returns a [TealessSSLEngine](https://github.com/elastic/tealess/blob/master/core/src/main/java/co/elastic/tealess/TealessSSLEngine.java) which captures wire [reads and writes](https://github.com/elastic/tealess/blob/master/core/src/main/java/co/elastic/tealess/TealessSSLEngine.java#L57-L70). [Exceptions](https://github.com/elastic/tealess/blob/master/core/src/main/java/co/elastic/tealess/TealessSSLEngine.java#L154-L157) are enriched with diagnostics.
 
 Exception diagnostic is handled in [DiagnosticTLSObserver](https://github.com/elastic/tealess/blob/master/core/src/main/java/co/elastic/tealess/DiagnosticTLSObserver.java). Wire data is recorded in an in-memory log. This log is examined first for the exception and then backtracked to inspect the network data with the goal of providing an actionable diagnosis for the user.
+
+Exception enrichment is done by creating a new instance of the same (or a close parent in the class heirarchy) with a custom `getMessage()` and copying the underlying `cause`. The goal of this is to have Tealess be a drop-in replacement with no required code changes on the client. Examples of this are [here](https://github.com/elastic/tealess/blob/master/core/src/main/java/co/elastic/tealess/DiagnosticTLSObserver.java#L79-L81) and [here](https://github.com/elastic/tealess/blob/master/core/src/main/java/co/elastic/tealess/DiagnosticTLSObserver.java#L132-L134).
 
 ## API Usage
 
