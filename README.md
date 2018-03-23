@@ -49,7 +49,7 @@ You can build a zip or tar of this project by doing the following:
 
 This will put the result in `.cli//build/distributions` as `tealess.zip` or `tealess.tar`
 
-## Design
+# Design
 
 This library provides an SSLContext that catches any thrown exception and tries to provide a human-readable and actionable report. It does this by wrapping the default SSLContext provided by Java crypto.
 
@@ -57,7 +57,7 @@ Both SSLSocket- and SSLEngine-style usages are supported.
 
 Exception handling is primarily targeted at the SSL/TLS Handshake as this is where most of the problems will happen for users.
 
-### Implementation Details
+## Implementation Details
 
 Because of the somewhat convoluted nature of Java's SSLContext and SSL APIs, most(?) of the code in this repository are object proxies necessary to capture wire data and enrich exceptions.
 
