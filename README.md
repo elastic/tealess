@@ -4,7 +4,7 @@
 ----
 
 NOTE: This project is not yet ready for general use. We're still figuring out
-what we want it to do and what interfaces it should provide for users.
+what we want it to do and what interfaces it should provide for users. Because of this, much of the code is in an active-exploration phase where there are lots of commented-out code, unused areas, and plenty of areas for improvement.
 
 ----
 
